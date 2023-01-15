@@ -1,3 +1,8 @@
-import { RemoteServer ,WS_PORT } from 'remote-signal'
+import { RemoteServer, serverOption } from 'remote-signal'
 
-const remoteServer = new RemoteServer({ port: WS_PORT } )
+serverOption.showMetric = 1;
+serverOption.showMessage = 'message';
+const remoteServer = new RemoteServer( serverOption )
+
+console.log( 'serverOption:', serverOption )
+

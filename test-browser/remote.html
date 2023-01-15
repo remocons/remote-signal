@@ -8,7 +8,6 @@
 </head>
 <body>
   <h1>simple remote client.</h1>
-  <p>remote-signal library will be loading from CDN</p>
   <ol>
     <li>start server</li>
     <li>load this page. then show the console</li>
@@ -33,8 +32,8 @@
 
     let remote2 = new Remote('ws://localhost:7777')
     remote2.on('ready',e=>{
-      remote2.signal('#home_channel', 'hello! I am remote1.')
-      remote2.signal('#home_channel2', 'hello! I am remote1.')
+      remote2.signal('#home_channel', 'hello! subscriber of #home_channel.')
+      remote2.signal('#home_channel2', 'hello! subscriber of #home_channel2.')
     })
 
   </script>
