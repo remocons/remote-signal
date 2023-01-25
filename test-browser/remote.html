@@ -32,8 +32,8 @@
 
     let remote2 = new Remote('ws://localhost:7777')
     remote2.on('ready',e=>{
-      remote2.signal('#home_channel', 'hello! subscriber of #home_channel.')
-      remote2.signal('#home_channel2', 'hello! subscriber of #home_channel2.')
+      remote2.signal('#home_channel', 'hello! I am remote1.')
+      remote2.signal('#home_channel2', 'hello! I am remote1.')
     })
 
   </script>

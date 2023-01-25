@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/congtrol/remote-signal#readme",
   "dependencies": {
-    "boho": "^0.2.0",
+    "boho": "^0.2.1",
     "eventemitter3": "^4.0.7",
     "meta-buffer-pack": "^1.3.0",
     "ws": "^8.8.0"
