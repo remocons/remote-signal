@@ -11,7 +11,9 @@ export class RemoteServer {
     // console.log('RemoteServer input options', options )
     this.manager = new Manager(authManager)
     this.startWSServer(options)
-    this.startCongServer(options)
+    if(options.congPort){ 
+      this.startCongServer(options)
+    }
 
     // publish local ipaddress to global server.
     if( serverOption.publishLocalAddress.use ){
