@@ -5,14 +5,24 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <style>
+    #messageView{
+      border: 1px solid red;
+      padding: 2em;
+    }
+  </style>
 </head>
 <body>
+  <h2>Simple pub sub example.</h2>
+  <p>you should start server first.</p>
   <p>this index.html load two types of modules. </p>
-  <h1>1. IIFE: remote-signal.min.js</h1>
+  <h5>1. IIFE: remote-signal.min.js</h5>
   <p>use global name:  Remote </p>
   <p>Remote has props: Boho, MBP, Buffer,, </p>
-  <h1>2. ESM: remote-signal.esm.js</h1>
+  <h5>2. ESM: remote-signal.esm.js</h5>
   <p> check the console.</p>
+  <h2>message log</h2>
+  <div id="messageView">...</div>
   <script src="../dist/remote-signal.min.js"></script>
   <script>
     console.log('IIFE:')
@@ -22,23 +32,56 @@
     console.log('Boho', Remote.Boho )
     console.log('sha256.hash("hi")',  Remote.Boho.sha256.hash('hi'))
 
-    var esRemote ;
-    var remote = new Remote('ws://localhost:7777')
+    var ESM_Remote ;
+    var remote1 = new Remote('ws://localhost:7777')
+    var remote2 = new Remote('ws://localhost:7777')
+    var remote3 = new Remote('ws://localhost:7777')
 
-    remote.listen('io', msg =>{
-      console.log('sub_io_handler event:', msg )
+    remote1.on('error', errorHandler )
+    remote2.on('error', errorHandler )
+    remote3.on('error', errorHandler )
+
+    let channelName = 'io'
+    // classic style subsribing
+    remote1.on('ready',e=>{
+      remote1.subscribe(channelName)
+      remote1.on(channelName, (...args)=>{
+        console.log('remote1 received', args )
+        let msg = '[remote1] ' + JSON.stringify( args )
+        addMessage(msg)
+      })
     })
-    remote.signal('io', 'pubdata')    
 
-    remote.listen('multi#ev', (...args ) =>{
-      console.log('multi event args:', args )
+    // modern style subscribing
+    remote2.listen(channelName, (...args)=>{
+      console.log('remote2 receive', args )
+      let msg = '[remote2] ' + JSON.stringify( args )
+        addMessage(msg)
     })
-    remote.signal('multi#ev', 'a', 2 , {key: 3})    
 
+    setInterval(e=>{
+      remote3.signal(channelName, 'single string')   // single string payload
+      remote3.signal(channelName, Date.now(), 'a', 2 , {key: 3} ) //multiple payload 
+      remote3.signal(channelName ) // pure signal without payload.
+    },3000)
+
+    function addMessage(msg){
+    
+      let p = document.createElement('p')
+      p.textContent = msg
+      let v = document.querySelector('#messageView')
+      if(v.childElementCount > 20) v.innerHTML = ""
+      v.prepend( p )
+    }
+
+    function errorHandler(e){
+      console.log(e.target)
+      addMessage('ws.error')
+    }
   </script>
   <script type="module">
     import { Remote, Boho, MBP, Buffer, sha256  } from "../dist/remote-signal.esm.js"
-    esRemote = Remote 
+    ESM_Remote = Remote 
     console.log('ESM:')
     console.log('Remote', Remote)
     console.log('Boho', Boho )
