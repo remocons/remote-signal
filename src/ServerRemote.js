@@ -4,6 +4,8 @@ import { ServerRemoteCore } from './ServerRemoteCore.js';
 import { RemoteMsg } from './constants.js';
 import { serverOption } from './serverOption.js';
 
+const decoder = new TextDecoder()
+
 export class ServerRemote extends ServerRemoteCore {
   constructor(socket, req, manager) {
     super(socket, manager);
@@ -45,10 +47,13 @@ export class ServerRemote extends ServerRemoteCore {
       };
     }else{ // TCP else
       this.congRx = new CongRx();
+      socket.on('data', data=>{ this.congRx.write(data)} )
+
       this.congRx.on('wrong',this.onWrongCongPacketMessage.bind(this))
       // readable.pipe( destination )
       // tcpSocket -> congRx(parser) -> onMessage
-      socket.pipe( this.congRx )
+      // socket.pipe( this.congRx )
+
       if(serverOption.debug.slow){
         this.congRx.on('data', this.onTimeDelayMessage.bind(this))
       }else{
@@ -57,6 +62,7 @@ export class ServerRemote extends ServerRemoteCore {
       
       socket.on('error', e=>{ console.log('TCP Socket error',e )})
       socket.on('close', e=>{ 
+        // console.log('cong socket close event')
         this.manager.removeClient(this);
         })
       
@@ -81,8 +87,20 @@ export class ServerRemote extends ServerRemoteCore {
       console.log('wrong congpack from user:', Date(), this.ip, this.ssid, this.cid )
     }else{
       // attacker
-      console.log('\n[', Date(),'] congpack attacker:', this.ssid , this.ip)
-      this.close();
+      let msg =""
+      try {
+        msg = decoder.decode(message)
+      } catch (error) {
+        msg += 'Len: '+ message.byteLength
+      }
+
+      // console.log('attacker message:', attackMsg)
+      if(this.manager.attackLogger){
+        let attackMsg = `> ${this.ssid} ${this.ip} ${msg}`
+        this.manager.attackLogger.log( attackMsg )
+      } 
+
+      this.close( true );
     }
   }
 
@@ -165,19 +183,21 @@ export class ServerRemote extends ServerRemoteCore {
     let tx = this.socket.txCounter
     let rx = this.socket.rxCounter
     let traffic = { tx, txb, rx, rxb }
-    console.log('traffic before close', traffic )
+    // console.log('traffic before close', traffic )
   }
 
-  close(){
+  close( terminateNow = false){
     this.getTraffic()
+    // let info = `call close() [${this.ssid}] socket: readyState:${this.socket.readyState} ${this.socket}`
+    // console.log( info )
     if( this.socketType === 'websocket' ){
-      this.socket.terminate();
+      if( terminateNow ) this.socket.terminate();
+        else this.socket.close();
     }else{
-      this.socket.end()
+      if( terminateNow ) this.socket.destroy();
+        else this.socket.end();
     }
   }
-
-
 
   send( message, isBinary ){
     this.manager.txBytes += message.byteLength;
@@ -191,16 +211,17 @@ export class ServerRemote extends ServerRemoteCore {
         }
       }else{
         // not open 
-        console.log('ServerRemote::send(), WS not open. cid:', this.cid , message )
-        this.close()
+        console.log('ServerRemote::send(), WS not open. #'+this.ssid + ' cid:', this.cid +":"+ this.getStateName() )
+        console.log('message not sent:', message )
+        this.close( true )
       }
 
     }else{ //CongSocket
       if( this.socket.readyState == 'open'){
         this.socket.write( CongTxSync(message) )
       }else{
-        console.log('ServerRemote::send(), CongSocket not open: cid:' , this.cid , message )
-        this.close()
+        console.log('ServerRemote::send(), CongSocket not open #'+this.ssid + ' cid:' , this.cid + ':' + this.getStateName() )
+        this.close( true )
       }
     }
 

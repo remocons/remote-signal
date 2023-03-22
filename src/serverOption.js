@@ -9,7 +9,20 @@ export let serverOption = {
   showMetric: 0,
   showChannel: 0,
   monitorPeriod: 5000,
-  useLogger: false,
+  fileLogger:{
+    connection: { 
+      use: false, 
+      path: 'connection.log'
+    },
+    auth: {
+      use: false, 
+      path: 'auth.log'
+    },
+    attack:{
+      use: false,
+      path:'attack.log'
+    }
+  },
   useQuota:{
     signalSize: false,
     publishCounter: false,

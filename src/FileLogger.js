@@ -7,7 +7,7 @@ export class FileLogger{
   }
   
   log(msg){
-    let format = this.timeStamp() + " "+ msg +'\n';
+    let format = new Date() + " "+ msg +'\n';
     fs.write( this.file, format , (err) => {
       if (err) throw err;
     })

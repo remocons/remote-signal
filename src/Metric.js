@@ -30,6 +30,14 @@ export class Metric{
     return metric
   }
 
+  getRemotes( prn ){
+    let remoteList =  Array.from(this.manager.remotes.values())
+    let remoteStates = remoteList.map(v=>{
+      return  "#"+v.ssid+":"+ v.cid +"("+v.state+")"
+    })
+    if (prn ) console.table(remoteStates)
+    return remoteStates
+  }
   getCIdList( prn ){
     let CIdList =  Array.from(this.manager.cid_map.keys())
     if (prn ) console.table(CIdList)
@@ -87,6 +95,17 @@ export class Metric{
           isSecure: remote.TLS,
           isAuth: remote.boho.isAuthorized,
           encMode:  ENC_MODE[remote.encMode]
+        }
+      }else if( mode == 4){
+        let channels = Array.from( remote.channels.keys() )
+        let set_memory = Array.from( remote.memory.keys() )
+        let retain_signal = Array.from( remote.retain_signal.keys() )
+        return {
+          ip: remote.ip,
+          uptime:  Math.trunc( ( Date.now() - remote.socket.openTime ) / 1000),
+          channels: channels,
+          set: set_memory,
+          retain: retain_signal
         }
       }
 

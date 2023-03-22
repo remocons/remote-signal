@@ -3,14 +3,26 @@ import { BohoMsg , Meta } from 'boho'
 import { quotaTable } from '../sockets/quotaTable.js'
 import { serverOption } from '../serverOption.js'
 import { RemoteMsg ,CLIENT_STATE } from '../constants.js'
+import { FileLogger } from '../FileLogger.js'
 
 const decoder = new TextDecoder()
 export class AuthCore{
   constructor(){ 
+    this.authLogger;
+    if( serverOption.fileLogger.auth.use ){
+      this.authLogger = new FileLogger( serverOption.fileLogger.auth.path)
+      console.log('AuthCore: begin file logger.[auth]')
+
+    }
   }
 
   send_auth_fail( peer , reason){
-    console.log('## AUTH_FAIL reason:', reason )
+    if( this.authLogger ){
+      let peerInfo = `FAIL #${peer.ssid} reason:${reason} `
+      this.authLogger.log( peerInfo )
+    } 
+
+    // console.log('## AUTH_FAIL reason:', reason )
     // peer.send( Buffer.from( [BohoMsg.AUTH_FAIL] ))
     peer.setState( CLIENT_STATE.AUTH_FAIL )
     setTimeout(e=>{
@@ -23,7 +35,7 @@ export class AuthCore{
       //1. unpack 
       let infoPack = MBP.unpack( auth_hmac , Meta.AUTH_HMAC )
       if(!infoPack){
-        this.send_auth_fail( peer ,'unpack auth_pack');
+        this.send_auth_fail( peer ,'unpack auth_pack fail');
         return
       }
 
@@ -79,6 +91,7 @@ export class AuthCore{
         old.send( Buffer.from( [ RemoteMsg.SERVER_CLEAR_AUTH ]))
         old.close() 
         peer.close()  // auto relogin
+        return
       }
 
 
@@ -118,10 +131,15 @@ export class AuthCore{
       //9. set cid_map
       peer.manager.cid_map.set( peer.cid , peer )
       // console.log( 'done: cid_map:', peer.manager.cid_map.keys()  )
-      console.log("LOGIN: ", `id: ${ peer.did}(${peer.cid})` )
+      // console.log("LOGIN: ", `id: ${ peer.did}(${peer.cid})` )
       //10. send ack.
       peer.send( auth_ack )
       peer.setState( CLIENT_STATE.AUTH_READY )
+      if( this.authLogger ){
+        let peerInfo = `OK #${peer.ssid} cid: ${peer.cid} did:${ peer.did }`
+        if( peer.isAdmin ) peerInfo = "#ADMIN# "+ peerInfo
+        this.authLogger.log( peerInfo )
+      } 
     } catch (error) {
       this.send_auth_fail( peer , 'caught: unknown error' + error );
     }

@@ -11,7 +11,7 @@ This library provides a server and client for doing signaling(messaging) with pe
 - CID: Communication Id.
 - HomeChannel: group by IP address.
 
-### Embedded Security
+### Built-in Security
 - Authentication
 - Encryption
 - E2EE
