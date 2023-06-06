@@ -60,7 +60,9 @@ export default [
       { file: pkg.esm, format: 'es' }
     ],
     plugins: [
-      resolve(), 
+      resolve({
+        preferBuiltins: true
+      }), 
       commonjs()
       ,terser() 
     ]
