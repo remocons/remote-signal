@@ -1,15 +1,17 @@
 import net from 'net'
-import { Manager }  from './Manager.js'
+import EventEmitter from 'events'
 import { WebSocketServer } from 'ws'
+import { Manager }  from './Manager.js'
 import { serverOption } from './serverOption.js'
-import { getLocalAddress } from './util.js'
-import { RemoteWS } from '../src/sockets/RemoteWS.js'
+import { getLocalAddress } from '../util.js'
+import { RemoteWS } from '../client/RemoteWS.js'
 
-export class RemoteServer {
+export class RemoteServer extends EventEmitter {
 
-  constructor(options, authManager ) {
+  constructor(options, authManager ,requestHandler) {
+    super();
     // console.log('RemoteServer input options', options )
-    this.manager = new Manager(authManager)
+    this.manager = new Manager(this, authManager ,requestHandler)
     this.startWSServer(options)
     if(options.congPort){ 
       this.startCongServer(options)
@@ -80,4 +82,5 @@ export class RemoteServer {
   }
 
 
+  
 }

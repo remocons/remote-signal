@@ -1,17 +1,22 @@
+/**
+ * Boho Symmetric Key Authentication.
+ */
+
 import { MBP } from 'meta-buffer-pack'
 import { BohoMsg , Meta } from 'boho'
-import { quotaTable } from '../sockets/quotaTable.js'
-import { serverOption } from '../serverOption.js'
+import { quotaTable } from '../quotaTable.js'
+import { serverOption } from '../server/serverOption.js'
 import { RemoteMsg ,CLIENT_STATE } from '../constants.js'
-import { FileLogger } from '../FileLogger.js'
+import { FileLogger } from '../server/FileLogger.js'
 
 const decoder = new TextDecoder()
-export class AuthCore{
-  constructor(){ 
+export class BohoAuth{
+  constructor( auth_database){ 
+    this.db = auth_database;
     this.authLogger;
     if( serverOption.fileLogger.auth.use ){
       this.authLogger = new FileLogger( serverOption.fileLogger.auth.path)
-      console.log('AuthCore: begin file logger.[auth]')
+      console.log('BohoAuth: begin file logger.[auth]')
 
     }
   }
@@ -47,7 +52,7 @@ export class AuthCore{
       }
 
       //2. get key of id from DB
-      let authInfo = await this.getAuth( id )
+      let authInfo = await this.db.getAuth( id )
 
       if(serverOption.debug.showAuthInfo ){
         console.log('##### authInfo',authInfo )

@@ -1,15 +1,14 @@
+/**
+ * Boho Symmetric Key Authentication.
+ * FileSystem DB Adapter
+ */
+
 import {readFileSync} from 'fs'
-import { AuthCore } from './AuthCore.js'
 import { sha256 } from 'boho'
 
-// this is a sample how Boho auth works.
-// !!Do not store plain password as string.
-// AuthRedis adapter example has addAuth example(using hashed key)
-export class AuthFile extends AuthCore{
+export class BohoAuthFileDB{
   constructor( path ){
-    super();
     this.AUTH = new Map();
-    this.PUBLIC = new Map();
     this.path = path
     if(path){
       // Read auth data from file
@@ -25,10 +24,6 @@ export class AuthFile extends AuthCore{
     return this.AUTH.get( id )
   }
 
-
-  async getPublic( id ){
-    return this.PUBLIC.get( id )
-  }
 
   //loaded when server start.
    loadAuthInfoFile(path){ 
@@ -48,9 +43,7 @@ export class AuthFile extends AuthCore{
     this.AUTH.set( id, { key: Base64hashKey, cid: cid, level: level } )
   }
 
-  setPublic( id, infoObj = {} ){
-    this.PUBLIC.set( id, infoObj )
-  }
+
 
 }
 

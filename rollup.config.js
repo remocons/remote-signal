@@ -28,7 +28,7 @@ export default [
     ]
   }
   ,{
-    input: './src/sockets/RemoteWebSocket.js',
+    input: './src/client/RemoteWebSocket.js',
     output: [
       {
         file: pkg.browser_esm,

@@ -1,0 +1,13 @@
+[
+  ["sampleid","samplekey","sample_cid",0],
+  ["id_max8","no_key_size_limit","communication_id",0],
+  ["device1","device1_key","device1_cid",0],
+  ["device2","device2_key","device2_cid",0],
+  ["uno","uno","uno",1],
+  ["go","go","go",2],
+  ["bro","bro","bro",3],
+  ["admin","admin","admin",255],
+  ["adminb","adminb","adminb",255]
+]
+
+

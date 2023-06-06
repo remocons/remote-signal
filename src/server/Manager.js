@@ -1,21 +1,23 @@
 import { MBP } from 'meta-buffer-pack'
 import { ServerRemote } from './ServerRemote.js'
 import { serverOption } from './serverOption.js'
-import { RemoteMsg, PAYLOAD_TYPE, CLIENT_STATE } from './constants.js'
+import { RemoteMsg, PAYLOAD_TYPE, CLIENT_STATE } from '../constants.js'
 import { FileLogger } from './FileLogger.js'
 import { Metric } from './Metric.js'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
-export class Manager {
+export class Manager{
 
-  constructor(authManager) {
+  constructor( server, bohoAuth , requestHandler ) {
+    this.server = server;
     this.txBytes = 0;
     this.rxBytes = 0;
 
-    this.authManager = authManager;
-    // TIP. authManager module is option.
+    this.bohoAuth = bohoAuth;
+    this.requestHandler = requestHandler;
+    // TIP. bohoAuth module is option.
     // if exist: used by ServerRemoteCore for the auth. process.
 
     this.connectionLogger;
@@ -502,84 +504,6 @@ export class Manager {
   }
 
 
-  async adminRequest(adminClient, message) {
-    // console.log('=== adminPack message', message)
-    let msgId;
-    let req;
-    let result;
-    try {
-
-      msgId = message.readUInt16BE(1)
-      req = MBP.unpack(message)
-      // console.log('adminRequest unpack req:',req )
-
-      if (!req) {
-        result = "wrong req mbp"
-        adminClient.response(msgId, 255)
-        return
-      }
-
-
-      if (req.$[0] == 'cid') {
-        result = this.metric.getCIdList()
-      } else if (req.$[0] == 'remotes' || req.$[0] == 'clients') {
-        result = this.metric.getRemotes()
-      } else if (req.$[0] == 'channels') {
-        result = this.metric.getChannelList()
-      } else if (req.$[0] == 'subscribers') {
-        let ch = req.$[1]
-        if (ch) result = this.metric.getSubscribers(ch)
-
-      } else if (req.$[0] == 'remote' || req.$[0] == 'client') {
-        let cid = req.$[1]
-        let mode = req.$[2]
-        if (cid) result = this.metric.getClientByCId(cid, mode)
-
-      } else if (req.$[0] == 'close') {
-        if (req.$[1]) result = this.closeRemoteByCId(req.$[1])
-
-      } else if (req.$[0] == 'addauth') {
-        if (this.authManager && req.$.length == 5) {
-          if (this.authManager.addAuth) {
-            let did = req.$[1]
-            let dkey = req.$[2]
-            let cid = req.$[3]
-            let level = req.$[4]
-            result = await this.authManager.addAuth(did, dkey, cid, level)
-          }
-
-        }
-      } else if (req.$[0] == 'delauth') {
-        if (this.authManager && req.$.length == 2) {
-          if (this.authManager.delAuth) {
-            let did = req.$[1]
-            result = await this.authManager.delAuth(did)
-          }
-        }
-      } else if (req.$[0] == 'getauth') {
-        if (this.authManager && req.$.length == 2) {
-          if (this.authManager.getAuth) {
-            let did = req.$[1]
-            result = await this.authManager.getAuth(did)
-          }
-        }
-      }
-
-      let code = 0;
-      // console.log('adminRequest: result', result)
-
-      if (!result) result = "nop"
-      let mbp = MBP.pack(MBP.MB('result', result));
-      adminClient.response(msgId, code, mbp)
-
-    } catch (error) {
-      // console.log('adminRequest err:',error)
-      adminClient.response(msgId, 255)
-    }
-
-
-
-  }
 
 
 }

@@ -68,8 +68,7 @@ export let RemoteMsg = {
   * 127: DEL
   */
   
-  ADMIN_REQ: 0xA0,
-  ADMIN_RES: 0xA1,
+  // ADMIN_REQ: 0xA0,
 
   // DO NOT USE: 0xB0~ 0xBF
   // Boho module using this numbers.

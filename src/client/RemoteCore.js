@@ -1,8 +1,8 @@
 import { MBP ,Buffer} from 'meta-buffer-pack'
 import EventEmitter from "eventemitter3/umd/eventemitter3.js";
-import { RemoteMsg , PAYLOAD_TYPE , SIZE_LIMIT , ENC_MODE ,STATES} from '../constants.js'
 import { Boho, BohoMsg, MetaSize } from "boho";
-import { quotaTable } from './quotaTable.js'
+import { RemoteMsg , PAYLOAD_TYPE , SIZE_LIMIT , ENC_MODE ,STATES} from '../constants.js'
+import { quotaTable } from '../quotaTable.js'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -45,17 +45,17 @@ export class RemoteCore extends EventEmitter{
     this.on('open',this.onOpenEventHandler.bind(this))
     this.on('close',this.onCloseEventHandler.bind(this))
     this.on('socket_data',this.onWrapSocketMessageEventHandler.bind(this))
-    this.on('auth_fail',this.onAuthFail.bind(this))
-    this.on('server_signal', this.onServerSignal.bind(this))
+    // this.on('auth_fail',this.onAuthFail.bind(this))
+    // this.on('server_signal', this.onServerSignal.bind(this))
   }
 
 
-  onAuthFail(event, reason){
-  }
+  // onAuthFail(event, reason){
+  // }
 
-  onServerSignal(event, data ){
-    console.log('onServerSignal', event, data )
-  }
+  // onServerSignal(event, data ){
+  //   console.log('onServerSignal', event, data )
+  // }
 
   onOpenEventHandler( ){
     if( this.serverURL.includes("wss://" )){
@@ -314,31 +314,9 @@ export class RemoteCore extends EventEmitter{
         break;
 
 
-    //  case RemoteMsg.SIGNAL_REQ: 
-    //   try{
-    //       let tagLen = buffer.readUint8(3)
-    //       let tagBuf = buffer.subarray(4, 4 + tagLen )
-    //       let tag = decoder.decode(tagBuf)
-
-    //         let binObj = MBP.unpack( buffer )
-    //         if(binObj){
-    //           let params = binObj.args 
-    //           console.log('[PUB_STR_CH_RET] ...args', ...params )
-    //           this.emit( tag, ...params)
-    //         }
-            
-    //       }catch(err){
-    //         console.log('SIGNAL_REQ err',err)
-    //       }
-    //       break;
-
       
       case RemoteMsg.RESPONSE_MBP:
-        let code = buffer.readUint8(1)
-        let mid = buffer.readUint16BE(2)
-        let meta = ( buffer.byteLength > 4  ) ?  buffer.subarray(4) : ""
-        // console.log(`RESPONSE_MBP  MID: ${mid} CODE: ${code} ,mbp: ${ buffer.subarray(4)} `)
-        this.testPromise( mid , code , meta)
+        this.testPromise( buffer)
         break;
 
 
@@ -364,6 +342,17 @@ export class RemoteCore extends EventEmitter{
           // this.emit('auth_fail','invalid server hmac')
           this.stateChange('auth_fail','invalid server_hmac' )
         }
+        break;
+      
+      default:
+        try {
+            decoded = decoder.decode( buffer )
+            // console.log('text message:', decoded)
+            this.emit('text_message', decoded)
+        } catch (error) {
+          
+        } 
+
         break;
 
     }
@@ -492,24 +481,28 @@ export class RemoteCore extends EventEmitter{
     })
   }
 
-  testPromise(mid , code , metaPack){
-    if( this.promiseMap.has(mid)){
+  testPromise( buffer ){
+    // console.log('mbp buffer : ', buffer , buffer.byteLength)
+    // let mbp = ( buffer.byteLength > 4  ) ?  buffer.subarray(4) : ""
+
+    let res = MBP.unpack(buffer)
+    if( !res ) return
+    // console.log( res )
+
+    // console.log(`RESPONSE_MBP  MID: ${mid} status: ${status} ,mbp: ${ buffer.subarray(4)} `)
+
+    if( this.promiseMap.has(res.mid)){
       // console.log('res promise msg', mid)
-      let [ resolve, reject ] = this.promiseMap.get( mid )
-      this.promiseMap.delete( mid )
-      let meta;
-      if( metaPack ){
-        meta = MBP.unpack( metaPack)
-      }
+      let [ resolve, reject ] = this.promiseMap.get( res.mid )
+      this.promiseMap.delete( res.mid )
 
-      if(code < 128){
+      if(res.status < 128){
+        res.ok = true;
         // console.log( 'unpack meta:', meta)
-        if(meta) resolve( meta )
-          else resolve(code)
-
+        resolve( res  )
       } else{
-        if(meta) reject( meta )
-          else reject( meta)
+        res.ok = false ;
+        reject ( res )
       } 
 
       
@@ -712,36 +705,45 @@ export class RemoteCore extends EventEmitter{
         tagEncoded ]) )
   }
 
-
-  // request returns promise.
-  request(tag){
-    if( typeof tag !== 'string') throw TypeError('tag should be string.')
-    let tagEncoded = encoder.encode( tag) 
-    if( tagEncoded.byteLength > SIZE_LIMIT.TAG_LEN1 ) throw TypeError('please use tag string bytelength: ' + SIZE_LIMIT.TAG_LEN1 )
-
-    this.send_enc_mode( 
-      Buffer.concat( [
-        MBP.NB('8',RemoteMsg.REQUEST),  
-        MBP.NB('16', ++this.mid), 
-        MBP.NB('8', tagEncoded.byteLength), 
-        tagEncoded ]) )
-    return this.setMsgPromise( this.mid )
+  
+  requestWebAuth(...args){
+    return this.req('webauth', ...args )
   }
 
-  sudo(...args){
-    return this.admin_request(...args)
+  requestRedis(...args){
+    return this.req('redis', ...args )
   }
 
-  admin_request(...args ){
-    let sigPack = MBP.pack( 
-      MBP.MB('#MsgType','8',RemoteMsg.ADMIN_REQ) , 
-      MBP.MB('#mid','16',++this.mid), 
-      MBP.MBA(  ...args )
-      )
+  requestSudo(...args){
+    return this.req('sudo', ...args)
+  }
+
+  req(...args ){
+    console.log('req args', args)
+    let target = args.shift();
+    let topic = args.shift();
+    let sigPack;
+    if(args.length > 0){
+        sigPack = MBP.pack( 
+        MBP.MB('#MsgType','8',RemoteMsg.REQUEST) ,
+        MBP.MB('mid','16',++this.mid), 
+        MBP.MB('target', target ), 
+        MBP.MB('topic', topic ), 
+        MBP.MBA(  ...args )
+        )
+    }else{
+        sigPack = MBP.pack( 
+        MBP.MB('#MsgType','8',RemoteMsg.REQUEST) ,
+        MBP.MB('mid','16',++this.mid), 
+        MBP.MB('target', target ), 
+        MBP.MB('topic', topic )
+        )
+    }
     // console.log('<< adminPack', this.mid, sigPack)
     this.send_enc_mode(  sigPack  )
     return this.setMsgPromise( this.mid )
-}
+  }
+
 
   subscribe_promise(tag){
     if( typeof tag !== 'string') throw TypeError('tag should be string.')
@@ -769,8 +771,8 @@ export class RemoteCore extends EventEmitter{
     console.log('<< AUTO_SUBSCRIBE_PROMISE', chList )
 
     this.subscribe_promise( chList)
-    .then( (r)=>{ 
-      // console.log('>> SUBSCRIBE_REQ SUCCESS reg_channels: ', r) // return code == map.size
+    .then( (res )=>{ 
+      console.log('>> SUBSCRIBE_REQ result', res ) // return code == map.size
       // console.log('-- local channels: ', this.channels ) // return code == map.size
     }).catch( (e)=>{
       console.log('>> SUBSCRIBE_REQ FAIL:', e)

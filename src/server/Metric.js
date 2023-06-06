@@ -1,5 +1,5 @@
 import { memoryUsage } from 'process';
-import { ENC_MODE } from './constants.js'
+import { ENC_MODE } from '../constants.js'
 
 
 export class Metric{

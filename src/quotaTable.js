@@ -5,8 +5,9 @@
 // quota example
 // index should 0~255.
 export let quotaTable = {
-  0: { // default. anonymouse_minimum:
-    signalSize: 255,
+  // CongSocket
+  0: { // default. anonymouse:
+    signalSize: 1500,
     publishCounter: 5,
     trafficRate: 10000
   },
@@ -20,7 +21,28 @@ export let quotaTable = {
     publishCounter: 10,
     trafficRate: 1048576
   },
-  3: { // auth_power: eg. authorized browser.
+
+  // WebSocket (browser and node app)
+  3: { // authorized basic.
+    signalSize: 1048576,  
+    publishCounter: 10,
+    trafficRate: 1048576 * 20
+  },
+
+  // WebSocket (browser and node app)
+  10: { //  anonymouse
+    signalSize: 1500,  
+    publishCounter: 5,
+    trafficRate: 1048576 * 20
+  },
+
+  11: { // authorized basic.
+    signalSize: 65535,  
+    publishCounter: 10,
+    trafficRate: 1048576 * 20
+  },
+  
+  12: { // authorized power.
     signalSize: 1048576,  
     publishCounter: 100,
     trafficRate: 1048576 * 20
@@ -28,8 +50,9 @@ export let quotaTable = {
   
   // you can add your limit.
 
-
-  255: { // super user
+  // super admin or root user.
+  // to monitor, metric, sudo command, db acess
+  255: { 
     signalSize: 1048576 * 20,
     publishCounter: 10000,
     trafficRate: 1048576 * 100

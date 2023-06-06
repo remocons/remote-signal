@@ -1,6 +1,6 @@
 {
   "name": "remote-signal",
-  "version": "0.7.0",
+  "version": "0.10.0",
   "description": "remote signal",
   "type": "module",
   "main": "./dist/remote-signal.cjs",

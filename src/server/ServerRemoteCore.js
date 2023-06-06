@@ -1,9 +1,9 @@
-import { MBP } from 'meta-buffer-pack'
-import { serverOption } from './serverOption.js';
-import { Boho, BohoMsg, MetaSize } from 'boho'
-import { RemoteMsg, ENC_MODE, CLIENT_STATE } from './constants.js'
-import { quotaTable } from './sockets/quotaTable.js'
 import { webcrypto } from 'crypto';
+import { MBP } from 'meta-buffer-pack'
+import { Boho, BohoMsg, MetaSize } from 'boho'
+import { serverOption } from './serverOption.js';
+import { RemoteMsg, ENC_MODE, CLIENT_STATE } from '../constants.js'
+import { quotaTable } from '../quotaTable.js'
 
 const decoder = new TextDecoder()
 
@@ -41,8 +41,8 @@ export class ServerRemoteCore {
     this.isAdmin = false;
 
     this.state;
-    this.setState(CLIENT_STATE.INIT)
     this.stateLog = [];
+    this.setState(CLIENT_STATE.INIT)
 
   }
 
@@ -229,15 +229,7 @@ export class ServerRemoteCore {
           }
           break;
 
-        case RemoteMsg.ADMIN_REQ:
-          if (this.isAdmin) {
-            //async
-            this.manager.adminRequest(this, message);
-          } else {
-            console.log('WARN. Sudo call from no admin')
-            this.close()
-          }
-          return
+
 
         case RemoteMsg.UNSUBSCRIBE:
           if (message.byteLength == 2) {
@@ -322,51 +314,56 @@ export class ServerRemoteCore {
               // console.log('>> SUBSCRIBE_REQ from:', this.cid, tagList)
               let size = this.manager.subscribe(tagList, this)
 
-              this.response(msgID, size)
+              // this.response(msgID, 0, { size: size })
+              this.response(msgID, 0)
             } else {
-              this.response(msgID, 255)
+              this.response(msgID, 255 )
             }
           }
           break;
 
-        case RemoteMsg.REQUEST:  // 1byte tagLen
-          if (message.byteLength >= 6) {
-            let msgID = message.readUInt16BE(1)
-            let tagLen = message.readUInt8(3)
 
-            if (message.byteLength == tagLen + 4) {
-              let tag = decoder.decode(message.subarray(4, 4 + tagLen))
-              console.log('>> REQUEST tag from:', tag, this.cid)
 
-              if (!this.manager.authManager) return
+        case RemoteMsg.REQUEST:
+          try {
+            let req = MBP.unpack( message )
+            // console.log('request unpack req', req)
+            if(req){
+              console.log('target', req.target, 'topic', req.topic)
+              if( !req.target || !req.topic ) return
 
-              this.manager.authManager.getPublic(tag).then(result => {
-                console.log('public info', result)
-                if (result) {
-
-                  this.response(msgID, 0,
-                    MBP.pack(
-                      MB('req', tag),
-                      MB('result', result)
-                    ))
-                } else {
-                  this.response(msgID, 0,
-                    MBP.pack(
-                      MB('req', tag),
-                      MB('result', "NOP")
-                    ))
-
+              if(this.manager.requestHandler ){
+                if(this.manager.requestHandler.targetNames.includes( req.target )){
+                  this.manager.requestHandler.handler[ req.target ].request( this, req )
+                  return
+                }else{
+                  console.log('no target handler ', req.target )
                 }
-              }).catch(err => {
-                this.response(msgID, 255)
-              })
+              }else{
+                console.log('not support requesthandler')
+              }
 
+              // switch( req.target){
+              //   case 'auth2':
+              //     req_auth2(this, req  )
+              //     return
+              //   case 'redis':
+              //     req_redis(this, req  )
+              //     return
+              //   case 'sudo':
+              //     req_sudo(this.manager, this, req);
+              //     return;
 
-            } else {
-              this.response(msgID, 255)
+              //   default:
+              //   console.log('no such a request target', req.target)
+
+              // }
             }
+          } catch (e) {
+            console.log('request catch error', e)
           }
           break;
+
 
         case RemoteMsg.CLOSE:
           if (message.byteLength > 1) {
@@ -379,7 +376,7 @@ export class ServerRemoteCore {
 
         // Auth
         case BohoMsg.AUTH_REQ:
-          if (!this.manager.authManager) return
+          if (!this.manager.bohoAuth) return
           if (this.state < CLIENT_STATE.SENT_SERVER_READY) {
             // console.log('protocol error. auth_req before server_ready')
             this.close();
@@ -392,14 +389,14 @@ export class ServerRemoteCore {
           break;
 
         case BohoMsg.AUTH_HMAC:
-          if (!this.manager.authManager) return
+          if (!this.manager.bohoAuth) return
           if (this.state < CLIENT_STATE.SENT_SERVER_NONCE) {
             // console.log('protocol error. auth_hmac before server_nonce')
             this.close();
           }
           this.setState(CLIENT_STATE.RECV_AUTH_HMAC)
           //async
-          this.manager.authManager.verify_auth_hmac(message, this)
+          this.manager.bohoAuth.verify_auth_hmac(message, this)
           return;
 
         default:
@@ -411,8 +408,10 @@ export class ServerRemoteCore {
       // TEXT FRAME
       try {
         let textMessage = decoder.decode(message)
-        // console.log('text:',textMessage )
-        this.manager.emit('message', textMessage, this)
+        // console.log('text buffer:',textMessage )
+        // console.log('text buffer:',message.toString('hex') )
+        this.manager.server.emit('text_message', textMessage, this)
+
       } catch (error) {
 
       }
@@ -421,17 +420,26 @@ export class ServerRemoteCore {
   }
 
 
-  response(msgId, statusCode, metaBufferPack = new Uint8Array(0)) {
-    // console.log(' response msgId,code,mbp:', msgId ,statusCode, metaBufferPack )
-    let pack = Buffer.concat([
-      NB('8', RemoteMsg.RESPONSE_MBP),
-      NB('8', statusCode),
-      NB('16', msgId),
-      metaBufferPack
-    ])
+  response(msgId, statusCode, body) {
+// console.log('response body', body)
+    if( body ){
 
-    // console.log('response pack', pack)
-    this.send_enc_mode(pack)
+      this.send_enc_mode( MBP.pack(
+        MB('#type', '8', RemoteMsg.RESPONSE_MBP),
+        MB('status','8', statusCode),
+        MB('mid','16', msgId),
+        MB('body',body)
+      ))
+
+    }else{
+      this.send_enc_mode( MBP.pack(
+        MB('#type','8', RemoteMsg.RESPONSE_MBP),
+        MB('status','8', statusCode),
+        MB('mid','16', msgId)
+      ))
+
+    }
+    
   }
 
 
