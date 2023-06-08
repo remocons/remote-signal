@@ -49,13 +49,9 @@ export default [
   }
   ,{
     input: './src/index.js',
-    external: ['node:stream'],
     output: [
       { file: pkg.main,
-        format: 'cjs',
-        globals: {
-          'node:stream': 'Transform'
-        }
+        format: 'cjs'
       },
       { file: pkg.esm, format: 'es' }
     ],

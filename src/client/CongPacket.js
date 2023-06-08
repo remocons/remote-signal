@@ -1,4 +1,4 @@
-import { Transform } from 'node:stream'
+import { Transform } from 'stream'
 import { MBP } from 'meta-buffer-pack'
 
 export const CongType = {

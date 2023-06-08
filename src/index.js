@@ -11,3 +11,7 @@ export { RequestHandler } from './server/req_handlers/RequstHandler.js'
 export { ReplyHandler } from './server/req_handlers/ReplyHandler.js'
 export { SudoHandler } from './server/req_handlers/SudoHandler.js'
 export * from 'boho'
+
+// redis dependant
+export { BohoAuthRedis } from './boho_auth_redis/BohoAuthRedis.js'
+export { RedisHandler } from './server/req_handlers/RedisHandler.js'
