@@ -442,7 +442,7 @@ export class Manager{
         // substitution home_channel
         if (ch.indexOf('#') === 0) {
           ch = client.HOME_CHANNEL + ch;
-        } else if( tag.includes('@')){
+        } else if( ch.includes('@')){
           ch = this.CID_PREFIX + ch;
         } else {
           ch = this.CHANNEL_PREFIX + ch;

@@ -42,6 +42,8 @@ export class RemoteCore extends EventEmitter{
     this.quota = quotaTable[ this.level ];
     this.serverSet = {}
 
+    this.linkMap = new Map()
+
     this.on('open',this.onOpenEventHandler.bind(this))
     this.on('close',this.onCloseEventHandler.bind(this))
     this.on('socket_data',this.onWrapSocketMessageEventHandler.bind(this))
@@ -628,8 +630,6 @@ export class RemoteCore extends EventEmitter{
   }
     
 
-
-    
   // signal_promise(tag , ...args ){
   //     let sigPack = this.get_signal_pack( tag, ...args )
   //     let sigRetPack = MBP.pack( 
@@ -641,36 +641,6 @@ export class RemoteCore extends EventEmitter{
   //     return this.setMsgPromise( this.mid )
   // }
     
-
-
-  listen(tag , handler){
-    if( typeof tag !== 'string') throw TypeError('tag should be string.')
-    if( tag.length > 255 || tag.length == 0 ) throw TypeError('tag string length range: 1~255')
-    
-    if( tag.indexOf('@') > 0 ){
-      // [cid_sub] subscribe specific remote.cid.
-       this.channels.add(tag) 
-    }else if( tag.indexOf('@') === 0){
-      // unicast message to me. 
-      // no subscribing needed.
-    }else{
-      this.channels.add(tag) 
-      // [channel_sub] subscribe the channel
-    }
-
-    console.log('channels:', this.channels )
-   
-    if( handler ){
-      if( typeof( handler) === 'function'){ 
-        this.on( tag , handler)
-      }else{
-        throw TypeError('listener handler is not a function')
-      }
-    }
-  
-  }
-  
-
   
   set(target ){
     if( typeof target !== 'string') throw TypeError('target should be string.')
@@ -685,25 +655,6 @@ export class RemoteCore extends EventEmitter{
         targetEncoded ]) )
   }
 
-
-  subscribe(tag ){
-    if( typeof tag !== 'string') throw TypeError('tag should be string.')
-    if( this.state !== STATES.READY ) return 
-
-    let tagList = tag.split(',')
-    tagList.forEach( tag=>{
-      this.channels.add(tag)
-    })
-
-    let tagEncoded = encoder.encode( tag) 
-    if( tagEncoded.byteLength > SIZE_LIMIT.TAG_LEN1 ) throw TypeError('please use tag string bytelength below:' + SIZE_LIMIT.TAG_LEN1 )
-
-    this.send_enc_mode( 
-      Buffer.concat( [
-        MBP.NB('8',RemoteMsg.SUBSCRIBE),  
-        MBP.NB('8', tagEncoded.byteLength), 
-        tagEncoded ]) )
-  }
 
   
   requestWebAuth(...args){
@@ -745,9 +696,27 @@ export class RemoteCore extends EventEmitter{
   }
 
 
+  subscribe(tag ){
+    if( typeof tag !== 'string') throw TypeError('tag should be string.')
+    if( this.state !== STATES.READY ) return 
+
+    let tagList = tag.split(',')
+    tagList.forEach( tag=>{
+      this.channels.add(tag)
+    })
+
+    let tagEncoded = encoder.encode( tag) 
+    if( tagEncoded.byteLength > SIZE_LIMIT.TAG_LEN1 ) throw TypeError('please use tag string bytelength below:' + SIZE_LIMIT.TAG_LEN1 )
+
+    this.send_enc_mode( 
+      Buffer.concat( [
+        MBP.NB('8',RemoteMsg.SUBSCRIBE),  
+        MBP.NB('8', tagEncoded.byteLength), 
+        tagEncoded ]) )
+  }
+
   subscribe_promise(tag){
     if( typeof tag !== 'string') throw TypeError('tag should be string.')
-
     if( this.state !== STATES.READY ){
       console.log('not ready state:', this.state )
       return Promise.reject('subscribe_promise:: connection is not ready')
@@ -768,14 +737,13 @@ export class RemoteCore extends EventEmitter{
   subscribe_memory_channels( ){ //local cache . auto_resubscribe
     if(this.channels.size == 0) return
     let chList = Array.from( this.channels).join(',')
-    console.log('<< AUTO_SUBSCRIBE_PROMISE', chList )
+    // console.log('<< subscibe memory channels by cid', chList , this.cid )
 
     this.subscribe_promise( chList)
     .then( (res )=>{ 
-      console.log('>> SUBSCRIBE_REQ result', res ) // return code == map.size
-      // console.log('-- local channels: ', this.channels ) // return code == map.size
+      // console.log('>> SUBSCRIBE_REQ result', res ) // return code == map.size
     }).catch( (e)=>{
-      console.log('>> SUBSCRIBE_REQ FAIL:', e)
+      console.log('>> SUBSCRIBE FAIL:', e)
     }) 
 
   }
@@ -791,7 +759,6 @@ export class RemoteCore extends EventEmitter{
       let tagList = tag.split(',')
       tagList.forEach( tag=>{
         this.channels.delete(tag)
-        this.removeAllListeners( tag )
       })
     }
 
@@ -803,6 +770,90 @@ export class RemoteCore extends EventEmitter{
       MBP.NB('8', tagEncoded.byteLength), 
       tagEncoded ]) )
   }
+
+
+  listen(tag , handler){
+    if( typeof tag !== 'string') throw TypeError('tag should be string.')
+    if( tag.length > 255 || tag.length == 0 ) throw TypeError('tag string length range: 1~255')
+    if( typeof handler !== 'function') throw TypeError('handler is not a function.')
+    
+    if( tag.indexOf('@') !== 0){
+      this.channels.add(tag) 
+    }
+    // console.log('channels:', this.channels )
+    this.on( tag , handler)
+    // do not subscribe now.
+    // will subscribe when receive CID_RES signal from server.
+  
+  }
+
+
+
+  link( to , tag , handler){
+    if( typeof to !== 'string') throw TypeError('to(local link target) is not a string.')
+    if( typeof tag !== 'string') throw TypeError('tag is not a string.')
+    if( tag.length > 255 || tag.length == 0 ) throw TypeError('tag string length range: 1~255')
+    if( typeof handler !== 'function') throw TypeError('handler is not a function.')
+    
+    if( tag.indexOf('@') !== 0){
+      this.channels.add(tag) 
+    }
+    
+    let linkSet;
+    if( this.linkMap.has(to) ){
+      linkSet = this.linkMap.get(to)
+    }else {
+      linkSet = new Set()
+    }
+    
+    linkSet.add(tag )
+    this.linkMap.set( to, linkSet)
+    this.on( tag , handler)
+    this.subscribe( tag )
+    // console.log('link [to] linkMap:', to, this.linkMap )
+  
+  }
+  
+
+  unlink( to, tag){
+    if( typeof to !== 'string') throw TypeError('to(local link target) is not a string.')
+    if( typeof tag !== 'string') throw TypeError('tag is not a string.')
+    if( tag.length > 255 || tag.length == 0 ) throw TypeError('tag string length range: 1~255')
+    
+    if( !this.linkMap.has( to ) ) return;
+
+    let linkSet = this.linkMap.get(to)
+    let tags = Array.from(linkSet)
+    for(let i=0; i< tags.length; i++){
+      if( tags[i] == tag ){
+        this.unsubscribe( tag )
+        this.removeAllListeners(tag)
+        linkSet.delete(tag)
+        this.linkMap.set( to , linkSet)
+        break;
+      }
+    }
+
+    // console.log('unlink linkMap result:', this.linkMap )
+  }
+
+  unlinkAll( to){
+    if( typeof to !== 'string') throw TypeError('to(local link target) is not a string.')
+    if( !this.linkMap.has( to ) ) return;
+
+    let linkSet = this.linkMap.get(to)
+    let tags =  Array.from(linkSet)
+    for(let i=0; i< tags.length; i++){
+        this.unsubscribe( tags[i] )
+        this.removeAllListeners(tags[i])
+        linkSet.delete(tags[i])
+    }
+    this.linkMap.delete( to )
+
+    // console.log('unlinkAll linkMap result:', this.linkMap )
+  }
+
+
 
   getMetric(){
     return { 
