@@ -8,7 +8,7 @@ export let quotaTable = {
   // CongSocket
   0: { // default. anonymouse:
     signalSize: 1500,
-    publishCounter: 5,
+    publishCounter: 10,
     trafficRate: 10000
   },
   1: { // auth_ultralight:  eg. Arduino Uno.

@@ -1,24 +1,17 @@
+import { STATUS } from './api_constant.js'
 
-export class RedisHandler{
-  constructor( name , redisClient){
+export class RedisAPI{
+  constructor( redisClient){
     if( !redisClient ){
-      throw new Error("RedisHandler constructor: no redisClient")
+      throw new Error("RedisAPI constructor: no redisClient")
     }
     this.redis = redisClient
-    if( name ){
-      this.name = name
-    }else{
-      this.name = 'redis'
-    }
   }
 
   async request(remote, req ){
-    if( !remote.isAdmin ){
-      remote.response( req.mid , 255 , "NO PERMISSION" )
-      return
-    }
-    let result = "no result";
-    let status = 0;// *0~127: ok ,  128~*255 :error
+
+    let result;
+    let status = STATUS.OK; // *0~127: ok ,  128~*255 :error
     try {
       console.log(req)
       let cmd = req.topic
@@ -33,16 +26,12 @@ export class RedisHandler{
       }else if(cmd == 'hgetall'){
         result = await this.redis.hGetAll(  ...req.$ )
       }else{
-        result = 'req_redis: no such a cmd '+ cmd;
-        status = 255;
+        result = 'redis api: no such a cmd '+ cmd;
+        status = STATUS.ERROR;
       }
-
-      // let mbp = MBP.pack(MBP.MB('result', result));
       remote.response( req.mid, status , result)
     } catch (e) {
-      // remote.response( mid, 255, error )
-      // console.error( e)
-      remote.response( req.mid, 255 ,e.message )
+      remote.response( req.mid, STATUS.ERROR ,e.message )
     }
 
   }

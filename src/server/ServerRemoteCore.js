@@ -23,7 +23,6 @@ export class ServerRemoteCore {
     this.boho = new Boho()
     this.encMode = ENC_MODE.AUTO;
     this.channels = new Set();  //  subscribed tags
-    this.memory = new Map(); // set command
     this.retain_signal = new Map();
 
     this.ssid = ServerRemoteCore.ssid++;  // ordered index number
@@ -31,7 +30,9 @@ export class ServerRemoteCore {
 
     this.cid; // Communication Id
     this.did; // Device Id
+    this.uid;
     this.nick = ""
+
 
     this.lastEchoMessage = "N"
     this.privateNode = false
@@ -47,6 +48,8 @@ export class ServerRemoteCore {
   }
 
   static ssid = 1;
+
+
 
   setState(state) {
     this.state = state
@@ -180,7 +183,7 @@ export class ServerRemoteCore {
           }
           if (!this.cid) {
             this.cid = '?' + webcrypto.getRandomValues(Buffer.alloc(3)).toString('base64')
-            this.manager.cid_map.set(this.cid, this)
+            this.manager.cid2remote.set(this.cid, this)
           }
 
           // console.log('<< SENDING CID_RES:', this.cid)
@@ -209,11 +212,11 @@ export class ServerRemoteCore {
           break;
 
         case RemoteMsg.IAM: // iam
-          // if(message.byteLength > 1){
-          //   let iamInfo = message.subarray(1)
-          //   this.nick = decoder.decode(iamInfo)  
-          //   console.log('iam nick reset', this.nick)
-          // }
+          if(message.byteLength > 1){
+            let iamInfo = message.subarray(1)
+            this.nick = decoder.decode(iamInfo)  
+            console.log('iam nick reset', this.nick)
+          }
           this.iamResponse()
           break;
 
@@ -224,7 +227,7 @@ export class ServerRemoteCore {
             if (message.byteLength >= tagLen + 2) {
               let tag = message.subarray(2, 2 + tagLen)
               tag = decoder.decode(tag)
-              this.manager.sender(tag, this, message, true)
+              this.manager.sender(tag, this, message )
             }
           }
           break;
@@ -247,47 +250,6 @@ export class ServerRemoteCore {
           }
           break;
 
-        case RemoteMsg.SET:
-          if (message.byteLength >= 3) {
-            let setLen = message.readUInt8(1)
-            if (message.byteLength == setLen + 2) {
-              let set = message.subarray(2, 2 + setLen)
-              set = decoder.decode(set)
-              let setList = set.split(',')
-              // console.log('######### SET List', setList)
-
-              // multiple set use  ',' comma separator.
-              // single set format: begin with $ , one char , then '=' and value sting.
-              // ex.   "$1=channel_name"
-              // ex.   "$1=firt_channel,$2=other_channel"
-              setList.forEach((setStr, i) => {
-                if (setStr.indexOf('$') == 0 && setStr.includes('=')) {
-                  let key = setStr.substring(0, setStr.indexOf('='))
-                  let value = setStr.substring(setStr.indexOf('=') + 1)
-                  if (key && value) {
-                    // console.log( 'key: ', key, 'value: ',value)
-                    let memoryKeyLimit = 3
-                    if (this.memory.size < memoryKeyLimit) {
-                      this.memory.set(key, value)
-                    } else if (this.memory.has(key)) {
-                      // console.log('## this.memory come to sizelimit. but change value is allowed' )
-                      this.memory.set(key, value)
-                    } else {
-                      // console.log('## this.memory size over. no addition allowed, change is okay.', this.memory.size )
-                    }
-                  } else if (key && value == "") {
-                    console.log('delete memory key', key)
-                    this.memory.delete(key)
-                  }
-
-                }
-              })
-
-              console.log('>> SET memory:', this.memory)
-
-            }
-          }
-          break;
 
         case RemoteMsg.SUBSCRIBE: // 1byte tagLen
           if (message.byteLength >= 3) {
@@ -323,41 +285,14 @@ export class ServerRemoteCore {
           break;
 
 
-
-        case RemoteMsg.REQUEST:
+        case RemoteMsg.REQUEST: //api request
           try {
             let req = MBP.unpack( message )
             // console.log('request unpack req', req)
             if(req){
-              console.log('target', req.target, 'topic', req.topic)
+              console.log('request target:', req.target, 'topic:', req.topic)
               if( !req.target || !req.topic ) return
-
-              if(this.manager.requestHandler ){
-                if(this.manager.requestHandler.targetNames.includes( req.target )){
-                  this.manager.requestHandler.handler[ req.target ].request( this, req )
-                  return
-                }else{
-                  console.log('no target handler ', req.target )
-                }
-              }else{
-                console.log('not support requesthandler')
-              }
-
-              // switch( req.target){
-              //   case 'auth2':
-              //     req_auth2(this, req  )
-              //     return
-              //   case 'redis':
-              //     req_redis(this, req  )
-              //     return
-              //   case 'sudo':
-              //     req_sudo(this.manager, this, req);
-              //     return;
-
-              //   default:
-              //   console.log('no such a request target', req.target)
-
-              // }
+              this.manager.server.emit( req.target, this , req  )
             }
           } catch (e) {
             console.log('request catch error', e)
@@ -411,7 +346,6 @@ export class ServerRemoteCore {
         // console.log('text buffer:',textMessage )
         // console.log('text buffer:',message.toString('hex') )
         this.manager.server.emit('text_message', textMessage, this)
-
       } catch (error) {
 
       }
@@ -497,8 +431,9 @@ export class ServerRemoteCore {
       }
 
       info = {
-        "cid": this.cid,
         "ssid": this.ssid,
+        "uid": this.uid,
+        "cid": this.cid,
         "did": this.did,
         "nick": this.nick,
         "ip": this.ip
@@ -513,6 +448,9 @@ export class ServerRemoteCore {
     this.send_enc_mode(pack)
   }
 
+  // storeSet(topic, ...args){
+    // this.manager.set( this, topic, ...args )
+  // }
 
 }
 

@@ -1,22 +1,11 @@
+import { STATUS } from './api_constant.js'
 
-export class SudoHandler{
-  constructor( name ){
-    this.name = 'sudo'
-    if( name ){
-      this.name = name
-    }
-  }
 
-  async request( remote, req) {
-    if( !remote.isAdmin ){
-      remote.response( req.mid , 255 , "NO PERMISSION" )
-      return
-    }
-    
+export async function request( remote, req) {
+    // console.log(req )
     let result;
     let status = 0;
     try {
-      console.log('req_sudo req:',req )
       let cmd = req.topic;
       cmd = cmd.toLowerCase()
       if (cmd == 'cid') {
@@ -28,7 +17,6 @@ export class SudoHandler{
       } else if (cmd == 'subscribers') {
         let ch = req.$[0]
         if (ch) result = remote.manager.metric.getSubscribers(ch)
-  
       } else if (cmd == 'remote' || cmd == 'client') {
         let cid = req.$[0]
         let mode = req.$[1]
@@ -66,17 +54,19 @@ export class SudoHandler{
           }
         }
       } else{
-        status = 255;
-        result = "sudo_reg: no such a cmd: " + cmd
+        status = STATUS.ERROR;
+        result = "api sudo: no such a cmd: " + cmd
       }
   
-      console.log('req_sudo: result', result)
+      // console.log('req_sudo: result', result)
       remote.response(req.mid, status, result)
   
     } catch (e) {
-      console.log('req_sudo err:',e.message)
-      remote.response(req.mid, 255 )
+      // console.log('req_sudo err:',e.message)
+      remote.response(req.mid, STATUS.ERROR , e.message )
     }
   
   }
-}
+
+
+

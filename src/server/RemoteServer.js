@@ -5,7 +5,7 @@ import { Manager }  from './Manager.js'
 import { serverOption } from './serverOption.js'
 import { getLocalAddress } from '../util.js'
 import { RemoteWS } from '../client/RemoteWS.js'
-
+import { STATUS } from './api/api_constant.js'
 export class RemoteServer extends EventEmitter {
 
   constructor(options, authManager ,requestHandler) {
@@ -82,5 +82,41 @@ export class RemoteServer extends EventEmitter {
   }
 
 
+
+  api( target, api , adminOnly = false){
+    
+    // type1,. single request function
+    if( typeof api.request == 'function'){
+      this.on( target, (remote, req)=>{
+        if( adminOnly && !remote.isAdmin){
+          remote.response(req.mid, STATUS.ERROR , "NO PERMISSION." )
+        }else{
+          api.request( remote, req ) 
+        }
+      })
+      
+    // type2. multiple functions
+    }else{ 
+      let apiList = []
+      Object.keys( api ).forEach( v=>{ 
+        if( typeof api[v] === 'function' ) apiList.push(v)  
+      })
+
+      this.on( target, ( remote, req)=>{
+        let r;
+        if( adminOnly && !remote.isAdmin){
+          r = "NO PERMISSION."
+        }else if( apiList.includes( req.topic ) ){
+          api[req.topic](remote, req )
+          return
+        }else{
+          r = "No such a Request topic: " + req.topic
+        }
+        remote.response(req.mid, STATUS.ERROR ,r )
+      })
+    }
+
+    return this
+  }
   
 }

@@ -39,7 +39,7 @@ export class Metric{
     return remoteStates
   }
   getCIdList( prn ){
-    let CIdList =  Array.from(this.manager.cid_map.keys())
+    let CIdList =  Array.from(this.manager.cid2remote.keys())
     if (prn ) console.table(CIdList)
     return CIdList
   }
@@ -64,8 +64,8 @@ export class Metric{
 
   getClientByCId( cid , mode = 1){
 
-    if( this.manager.cid_map.has(cid)){
-      let remote = this.manager.cid_map.get(cid)
+    if( this.manager.cid2remote.has(cid)){
+      let remote = this.manager.cid2remote.get(cid)
       if(mode == 1){
         return {
           ip: remote.ip,
@@ -122,7 +122,7 @@ export class Metric{
 
   // cid(){
   //   let cid_remotes = [];
-  //   this.manager.cid_map.forEach( (v, cid )=>{
+  //   this.manager.cid2remote.forEach( (v, cid )=>{
   //     cid_remotes.push( {
   //       ssid: v.ssid,
   //       cid: v.cid,
@@ -133,7 +133,7 @@ export class Metric{
   //     })
   //   })
 
-  //   console.log('\n\ncid_map:')
+  //   console.log('\n\ncid2remote:')
   //   console.table(cid_remotes, [ 'ssid','cid','uptime','isSecure','isAuth','encMode']);
   //   return cid_remotes;
   // }

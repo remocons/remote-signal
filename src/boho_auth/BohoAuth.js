@@ -27,7 +27,7 @@ export class BohoAuth{
       this.authLogger.log( peerInfo )
     } 
 
-    // console.log('## AUTH_FAIL reason:', reason )
+    console.log('## AUTH_FAIL reason:', reason )
     // peer.send( Buffer.from( [BohoMsg.AUTH_FAIL] ))
     peer.setState( CLIENT_STATE.AUTH_FAIL )
     setTimeout(e=>{
@@ -63,14 +63,25 @@ export class BohoAuth{
         return
       }
 
-      let authKey =  Buffer.from( authInfo.key, 'base64')
+      // console.log('db authInfo.key: ', authInfo.key)
+      peer.boho.copy_id8( infoPack.id8 )
+      // type of key
+      let authKey ;
+      const SHA256_HASH_BASE64_LEN = 44
+      if( authInfo.key.length == SHA256_HASH_BASE64_LEN){
+        // hashed key
+        authKey =  Buffer.from( authInfo.key, 'base64')
+        peer.boho.copy_key( authKey )
+      }else{
+        // plain key
+        peer.boho.set_key( authInfo.key )
+      }
       
       //3. check hmac
       // console.log('-- found: authKey of id: ', id, authKey.toString('hex'))
-      peer.boho.copy_id8( infoPack.id8 )
-      peer.boho.copy_key( authKey )
       let auth_ack = peer.boho.check_auth_hmac( infoPack )
 
+      console.log('auth_ack',  auth_ack )
       if( !auth_ack ){
         this.send_auth_fail( peer, 'hmac dismatched' );
         return
@@ -86,8 +97,8 @@ export class BohoAuth{
       // 1. send clear_auth signal to the old connection. 
       // 2. close old connection.
       // 3. close new connection. retry from begining.
-      if( peer.manager.cid_map.has( authInfo.cid  ) ){
-        let old = peer.manager.cid_map.get(authInfo.cid )
+      if( peer.manager.cid2remote.has( authInfo.cid  ) ){
+        let old = peer.manager.cid2remote.get(authInfo.cid )
         if( old == peer ){
           console.log('## trying RELOGIN with SAME ID. ignored.')
           return
@@ -102,7 +113,7 @@ export class BohoAuth{
 
       //6. delete current (temp rand)cid if exist.
       if( peer.cid ){
-        peer.manager.cid_map.delete( peer.cid ) 
+        peer.manager.cid2remote.delete( peer.cid ) 
       }
 
       //7. setting info.
@@ -133,9 +144,9 @@ export class BohoAuth{
       // send quota.level
       peer.send( Buffer.from( [RemoteMsg.QUOTA_LEVEL, quotaLevel] ))
 
-      //9. set cid_map
-      peer.manager.cid_map.set( peer.cid , peer )
-      // console.log( 'done: cid_map:', peer.manager.cid_map.keys()  )
+      //9. set cid2remote
+      peer.manager.cid2remote.set( peer.cid , peer )
+      // console.log( 'done: cid2remote:', peer.manager.cid2remote.keys()  )
       // console.log("LOGIN: ", `id: ${ peer.did}(${peer.cid})` )
       //10. send ack.
       peer.send( auth_ack )

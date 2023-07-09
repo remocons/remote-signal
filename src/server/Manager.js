@@ -10,13 +10,12 @@ const decoder = new TextDecoder()
 
 export class Manager{
 
-  constructor( server, bohoAuth , requestHandler ) {
+  constructor( server, bohoAuth  ) {
     this.server = server;
     this.txBytes = 0;
     this.rxBytes = 0;
 
     this.bohoAuth = bohoAuth;
-    this.requestHandler = requestHandler;
     // TIP. bohoAuth module is option.
     // if exist: used by ServerRemoteCore for the auth. process.
 
@@ -32,18 +31,17 @@ export class Manager{
       console.log('Manager: begin file logger.[attack]')
     }
 
-    // this.privateChannelName =  webcrypto.getRandomValues( Buffer.alloc(15) ).toString('base64') 
-    // this.publicIPChannelBaseName = webcrypto.getRandomValues( Buffer.alloc(15) ).toString('base64') 
-
     this.remotes = new Set(); // total ServerRemotes
     this.channel_map = new Map()  //  key: channelName  value: < ServerRemote : Set >
     this.CHANNEL_PREFIX = 'CH:'
     this.CID_PREFIX = 'CID:'
-    this.cid_map = new Map(); //  map:[ key:cid -> value:client ]
+    this.cid2remote = new Map(); //  map:[ key:cid -> value:client ]
     this.retain_messages = new Map() // key: tag, data: signalMessage
     this.metric = new Metric(this)
-
     this.lastSSID = 0;
+
+    // this.uid2remotes = new Map()  
+    // this.uidStores = new Map()
 
     this.pingIntervalID = setInterval(e => {
       this.remotes.forEach(function each(remo) {
@@ -127,8 +125,11 @@ export class Manager{
       }
     }
  
+    // this.delUserRemote(client )
+    let req = { topic:'delUserRemote'}
+    this.server.emit('member', client, req )
     this.remotes.delete(client)
-    this.cid_map.delete(client.cid)
+    this.cid2remote.delete(client.cid)
     client = null
 
   }
@@ -210,38 +211,40 @@ export class Manager{
 
   }
 
-  get_signal_pack(target, ...args) {
-    if (typeof target !== 'string') throw TypeError('target should be string.')
-    let targetEncoded = encoder.encode(target)
+  get_signal_pack(tag, ...args) {
+    if (typeof tag !== 'string') throw TypeError('tag should be string.')
+    let tagEncoded = encoder.encode(tag)
     let payload = this.parsePayload(args)
 
     let sigPack;
     if (payload.type == PAYLOAD_TYPE.EMPTY) {
       sigPack = MBP.pack(
         MBP.MB('#MsgType', '8', RemoteMsg.SIGNAL),
-        MBP.MB('#targetLen', '8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen', '8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type)
       )
     } else if (payload.type == PAYLOAD_TYPE.MBA) {
       sigPack = MBP.pack(
         MBP.MB('#MsgType', '8', RemoteMsg.SIGNAL),
-        MBP.MB('#targetLen', '8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen', '8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type),
         MBP.MBA(...args)
       )
     } else {
       sigPack = MBP.pack(
         MBP.MB('#MsgType', '8', RemoteMsg.SIGNAL),
-        MBP.MB('#targetLen', '8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen', '8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type),
         MBP.MB('#payload', payload.buffer)
       )
     }
     return sigPack
   }
+
+
 
 
   // signaling to the cid subscribers.
@@ -251,19 +254,10 @@ export class Manager{
     this.sender(tag, client, sigPack)
   }
 
-  sender(tag, client, message) {
-    // console.log('-- sender tag:', tag )
 
-    /* three types of signal message.
-     
-     uni-cast: 'cid@?'
-      > find cid
-      > remove cid from tag.
-      > send to the_cid.
-     cid_publish:  '@??' 
-      > server modify tag: append sender.cid
-     ch_publish: 'channel'
-    */
+  sender(tag, client, message) {
+
+    if( tag.indexOf('$') == 0 ) return ['err', 'prefix $ is reserved for userSet tag.']
 
     let cidIndex = tag.indexOf('@');
     if (cidIndex === 0) {
@@ -278,12 +272,12 @@ export class Manager{
       // uni-cast.  
       // console.log('unicast to:', tag)
       let targetCId = tag.split('@')[0];
-      if (this.cid_map.has(targetCId)) {
+      if (this.cid2remote.has(targetCId)) {
         //rm cid from tag.
         let ommitCIdTag = '@' + tag.split('@')[1]
         message = this.getNewSignalTagMessage(message, ommitCIdTag)
         // console.log(`origin tag: ${tag} omitTag: ${this.getSignalTag(message)}`)
-        this.cid_map.get(targetCId).send_enc_mode(message)
+        this.cid2remote.get(targetCId).send_enc_mode(message)
         return ['ok', 1]
       }
       return ['err', 'Invalid cid']
@@ -404,8 +398,8 @@ export class Manager{
           let cid = tag.split('@')[0]
           cid = cid.split(this.CID_PREFIX)[1]
           let retainTag = tag.split('@')[1]
-          if (this.cid_map.has(cid)) {
-            retainMessage = this.cid_map.get(cid).retain_signal.get(retainTag)
+          if (this.cid2remote.has(cid)) {
+            retainMessage = this.cid2remote.get(cid).retain_signal.get(retainTag)
           } else {
             // console.log('cid subscribe is rejected. not online:', cid)
             return;
@@ -495,15 +489,13 @@ export class Manager{
 
 
   closeRemoteByCId(cid) {
-    if (this.cid_map.has(cid)) {
-      this.cid_map.get(cid).close()
+    if (this.cid2remote.has(cid)) {
+      this.cid2remote.get(cid).close()
       return 1
     } else {
       return 0
     }
   }
-
-
 
 
 }

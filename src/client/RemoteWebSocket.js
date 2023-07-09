@@ -1,6 +1,7 @@
 import { RemoteCore } from "./RemoteCore.js";
 import { Buffer } from 'meta-buffer-pack'
 export { Boho, RAND, BohoMsg, Meta, MetaSize , sha256, MBP, Buffer } from 'boho'
+export { STATUS } from '../constants.js'
 
 // using Browser WebSocket
 export class Remote extends RemoteCore{

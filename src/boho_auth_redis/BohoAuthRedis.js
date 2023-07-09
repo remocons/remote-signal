@@ -5,9 +5,7 @@
  */
 
 import { sha256 } from 'boho'
-
 const DEVICE_PREFIX = "device:"
-const KEY_SALT = "" // Adding Salt to Key Hashing: to protect rainbow table atttack or dictionary attack
 
 export class BohoAuthRedis{
   constructor( redisClient ){
@@ -27,8 +25,7 @@ export class BohoAuthRedis{
 // add device auth info
   async addAuth( id, keyStr , cid = '', level = 0){
     console.log('addAuth', id, keyStr, cid, level)
-    let Base64hashKey = Buffer.from( sha256.hash( KEY_SALT + keyStr)).toString('base64')
-    // let addAuth = this.redis.set( DEVICE_PREFIX + id,  hashKey  )
+    let Base64hashKey = Buffer.from( sha256.hash( keyStr)).toString('base64')
     return this.redis.hSet( DEVICE_PREFIX + id, {'key': Base64hashKey, 'cid': cid ,'level': level} )
   }
 

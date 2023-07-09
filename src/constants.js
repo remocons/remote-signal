@@ -113,7 +113,7 @@ export let RemoteMsg = {
   IAM_RES: 0xDA,
   
   //.. 
-  SET: 0xDB,   // setting server database.
+  SET: 0xDB,   //
   RESPONSE_CODE: 0xDC,   
   RESPONSE_MBP: 0xDD,   
 
@@ -136,3 +136,19 @@ export let RemoteMsg = {
 for (let c in RemoteMsg) { RemoteMsg[RemoteMsg[c]] = c }
 
 // console.log( RemoteMsg );
+
+
+export const API_TYPE = {
+  'REQUEST_RESPONSE': 'requet_response',
+  'ONE_WAY': 'one_way'
+}
+
+
+
+// api response status code
+export const STATUS = {
+  OK: 0,
+  //0~127: success
+  //128~255: fail
+  ERROR: 255
+}

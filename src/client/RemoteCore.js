@@ -77,8 +77,12 @@ export class RemoteCore extends EventEmitter{
   // manual login
   login( id, key){
     console.log('try manual login: ', id)
-    this.boho.set_id8(id)
-    this.boho.set_key(key)
+    if( !key && id.includes('.') ){
+      this.boho.set_id_key(id)
+    }else{
+      this.boho.set_id8(id)
+      this.boho.set_key(key)
+    }
     this.useAuth = true
     let auth_pack = this.boho.auth_req()
     // console.log('auth_req_pack', auth_pack )
@@ -88,8 +92,12 @@ export class RemoteCore extends EventEmitter{
   // auto login
   auth( id, key){
     console.log('set auto auth: ', id)
-    this.boho.set_id8(id)
-    this.boho.set_key(key)
+    if( !key && id.includes('.') ){
+      this.boho.set_id_key(id)
+    }else{
+      this.boho.set_id8(id)
+      this.boho.set_key(key)
+    }
     this.useAuth = true
   }
 
@@ -216,6 +224,18 @@ export class RemoteCore extends EventEmitter{
         }
     break;
 
+    case RemoteMsg.SET:
+        try {
+          let setPack = MBP.unpack(buffer)
+          if(setPack ){
+            console.log('[SET] topic: ',setPack.topic )
+            this.emit( setPack.topic, ...setPack.args )
+          }
+        } catch (error) {
+          console.log('<SET> parsing error')
+        }
+    break;
+
      case RemoteMsg.SIGNAL_E2E: 
      case RemoteMsg.SIGNAL: 
       try{
@@ -231,35 +251,8 @@ export class RemoteCore extends EventEmitter{
             > cid_sub message:  tag includes cid and @ both : 'cid@*'
             > ch_sub message:  else.
           */
-     
-          let cidIndex =  tag.indexOf('@');
-          if(cidIndex === 0){
-            // unicast to me.
-            // console.log('unicast to me:', tag)
-          }else if( cidIndex > 0){
-            // console.log('cid_pub from tag:', tag)
-            // pub message from cid. 
-            // you already subscribe the cid.  
-          }else{
-            // console.log('ch_pub tag:', tag)
-            //else channel publish message
-          }
 
 
-          // unicast tag include @
-          // if( tag.includes( '@') ){
-          //   let tagPath = tag.split( '@' )
-          //   // 'cid' => '@' substitution.
-          //   if( tagPath.length == 2 ){ 
-          //     tag = '@' + tagPath[1] ; // 'cid@topic' => '@topic'
-          //   }else{
-          //     tag = '@' // 'cid' => '@'
-          //   }
-          // }
-          
-          // console.log(`>> sig tag: ${tag}` )
-          // console.log('[payload type ]',  PAYLOAD_TYPE[ payloadType ] )
-      
           switch( payloadType ){
 
             case PAYLOAD_TYPE.EMPTY:  // 0
@@ -330,19 +323,22 @@ export class RemoteCore extends EventEmitter{
           this.send( auth_hmac )
         }else{
           this.stateChange('auth_fail', 'Invalid local auth_hmac.' )
+          console.log('auth_fail', 'Invalid local auth_hmac.' )
         }
         break;
-      case BohoMsg.AUTH_FAIL:
+        case BohoMsg.AUTH_FAIL:
           this.stateChange('auth_fail','server reject auth.' )
+          console.log('auth_fail', 'Iserver reject auth.' )
           break;
-      case BohoMsg.AUTH_ACK:
-        if(this.boho.check_auth_ack_hmac( buffer ) ){
-          // this.emit('authorized' );   
-          this.stateChange('auth_ready','server sent auth_ack' )
-          this.send( Buffer.from([RemoteMsg.CID_REQ ]) )
-        }else{
-          // this.emit('auth_fail','invalid server hmac')
-          this.stateChange('auth_fail','invalid server_hmac' )
+          case BohoMsg.AUTH_ACK:
+            if(this.boho.check_auth_ack_hmac( buffer ) ){
+              // this.emit('authorized' );   
+              this.stateChange('auth_ready','server sent auth_ack' )
+              this.send( Buffer.from([RemoteMsg.CID_REQ ]) )
+            }else{
+              // this.emit('auth_fail','invalid server hmac')
+              this.stateChange('auth_fail','invalid server_hmac' )
+              console.log('auth_fail', 'Invalid server hmac.' )
         }
         break;
       
@@ -563,32 +559,32 @@ export class RemoteCore extends EventEmitter{
 
   }  
 
-  get_signal_pack( target, ...args ){
-    if( typeof target !== 'string') throw TypeError('target should be string.')
-    let targetEncoded = encoder.encode( target)
+  get_signal_pack( tag, ...args ){
+    if( typeof tag !== 'string') throw TypeError('tag should be string.')
+    let tagEncoded = encoder.encode( tag)
     let payload = this.parsePayload( args )
 
     let sigPack;
     if( payload.type == PAYLOAD_TYPE.EMPTY ){
       sigPack = MBP.pack( 
         MBP.MB('#MsgType','8', RemoteMsg.SIGNAL) , 
-        MBP.MB('#targetLen','8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen','8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type )
         )
     }else if( payload.type == PAYLOAD_TYPE.MBA ){
       sigPack = MBP.pack( 
         MBP.MB('#MsgType','8', RemoteMsg.SIGNAL) , 
-        MBP.MB('#targetLen','8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen','8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type ),
         MBP.MBA(...args)
         )
     }else {
       sigPack = MBP.pack( 
         MBP.MB('#MsgType','8', RemoteMsg.SIGNAL) , 
-        MBP.MB('#targetLen','8', targetEncoded.byteLength),
-        MBP.MB('#target', targetEncoded),
+        MBP.MB('#tagLen','8', tagEncoded.byteLength),
+        MBP.MB('#tag', tagEncoded),
         MBP.MB('#payloadType', '8', payload.type ),
         MBP.MB('#payload', payload.buffer )
         )
@@ -597,10 +593,10 @@ export class RemoteCore extends EventEmitter{
   }
 
 
-  signal( target , ...args ){
-    if( typeof target !== 'string') throw TypeError('target should be string.')
+  signal( tag , ...args ){
+    if( typeof tag !== 'string') throw TypeError('tag should be string.')
 
-    let signalPack = this.get_signal_pack(target, ...args )
+    let signalPack = this.get_signal_pack(tag, ...args )
     this.send_enc_mode( signalPack )
   }
 
@@ -608,10 +604,10 @@ export class RemoteCore extends EventEmitter{
    return this.boho.decrypt_e2e( data, key )
   }
 
-  signal_e2e( target , data, key){
+  signal_e2e( tag , data, key){
 
-    if( typeof target !== 'string') throw TypeError('target should be string.')
-    let targetEncoded = encoder.encode( target)
+    if( typeof tag !== 'string') throw TypeError('tag should be string.')
+    let tagEncoded = encoder.encode( tag)
     let dataPack = MBP.B8( data  )
 
     //encrypt payload area with key
@@ -620,8 +616,8 @@ export class RemoteCore extends EventEmitter{
     //change signal MsgType header into SIGNAL_E2E
     let signalPack = MBP.pack( 
       MBP.MB('#MsgType','8', RemoteMsg.SIGNAL_E2E) , 
-      MBP.MB('#targetLen','8', targetEncoded.byteLength),
-      MBP.MB('#target', targetEncoded),
+      MBP.MB('#tagLen','8', tagEncoded.byteLength),
+      MBP.MB('#tag', tagEncoded),
       MBP.MB('#payloadType', '8', PAYLOAD_TYPE.BINARY ),
       MBP.MB('#payload', sercretPack )
       )
@@ -629,54 +625,33 @@ export class RemoteCore extends EventEmitter{
     this.send_enc_mode( signalPack )
   }
     
-
-  // signal_promise(tag , ...args ){
-  //     let sigPack = this.get_signal_pack( tag, ...args )
-  //     let sigRetPack = MBP.pack( 
-  //       MBP.MB('#MsgType','8',RemoteMsg.SIGNAL_REQ) , 
-  //       MBP.MB('#mid','16',++this.mid), 
-  //       MBP.MB('#sigPack_withoutHeader', sigPack.subarray(1))
-  //       )
-  //     this.send_enc_mode(  sigRetPack  )
-  //     return this.setMsgPromise( this.mid )
-  // }
     
   
-  set(target ){
-    if( typeof target !== 'string') throw TypeError('target should be string.')
-    if( this.state !== STATES.READY ) return 
-    let targetEncoded = encoder.encode( target) 
-    if( targetEncoded.byteLength > SIZE_LIMIT.TAG_LEN1 ) throw TypeError('please use target string bytelength below:' + SIZE_LIMIT.TAG_LEN1 )
-
-    this.send_enc_mode( 
-      Buffer.concat( [
-        MBP.NB('8',RemoteMsg.SET),  
-        MBP.NB('8', targetEncoded.byteLength), 
-        targetEncoded ]) )
+  set( storeName, ...args ){
+    if( !storeName || args.length == 0 ){
+      return Promise.reject(new Error('set need storeName and value)'))
+    } 
+    return this.req('store', 'set', storeName, ...args )
   }
-
-
   
-  requestWebAuth(...args){
-    return this.req('webauth', ...args )
+  async get( storeName ){
+    if( !storeName ){
+      return Promise.reject(new Error('store get need storeName)'))
+    } 
+    let pack = await this.req('store', 'get', storeName )
+    let { $ } = MBP.unpack(pack.body)
+    return $
   }
-
-  requestRedis(...args){
-    return this.req('redis', ...args )
-  }
-
-  requestSudo(...args){
-    return this.req('sudo', ...args)
-  }
-
-  req(...args ){
-    console.log('req args', args)
-    let target = args.shift();
-    let topic = args.shift();
+  
+  
+  req( target, topic, ...args ){
+    // console.log('common_req args', args)
+    if( !target || !topic) 
+      return Promise.reject(new Error('request need target and topic)'))
     let sigPack;
     if(args.length > 0){
         sigPack = MBP.pack( 
-        MBP.MB('#MsgType','8',RemoteMsg.REQUEST) ,
+        MBP.MB('#MsgType','8', RemoteMsg.REQUEST) ,
         MBP.MB('mid','16',++this.mid), 
         MBP.MB('target', target ), 
         MBP.MB('topic', topic ), 
@@ -684,7 +659,7 @@ export class RemoteCore extends EventEmitter{
         )
     }else{
         sigPack = MBP.pack( 
-        MBP.MB('#MsgType','8',RemoteMsg.REQUEST) ,
+        MBP.MB('#MsgType','8', RemoteMsg.REQUEST) ,
         MBP.MB('mid','16',++this.mid), 
         MBP.MB('target', target ), 
         MBP.MB('topic', topic )
@@ -749,11 +724,11 @@ export class RemoteCore extends EventEmitter{
   }
 
   unsubscribe(tag = ""){
-    console.log('unsub', tag)
+    // console.log('unsub', tag)
     if( typeof tag !== 'string') throw TypeError('tag should be string.')
     
     if(tag == ""){
-      console.log('unsub all')
+      // console.log('unsub all')
       this.channels.clear();
     }else{
       let tagList = tag.split(',')
