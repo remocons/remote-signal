@@ -127,7 +127,7 @@ export class Manager{
  
     // this.delUserRemote(client )
     let req = { topic:'delUserRemote'}
-    this.server.emit('member', client, req )
+    this.server.emit('account', client, req )
     this.remotes.delete(client)
     this.cid2remote.delete(client.cid)
     client = null

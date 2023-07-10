@@ -206,11 +206,6 @@ export class ServerRemoteCore {
           this.send(message, isBinary)
           break;
 
-        case RemoteMsg.LOOP: // loop back. 
-          let payloadOnly = message.subarray(1)
-          this.send(payloadOnly, isBinary)
-          break;
-
         case RemoteMsg.IAM: // iam
           if(message.byteLength > 1){
             let iamInfo = message.subarray(1)
