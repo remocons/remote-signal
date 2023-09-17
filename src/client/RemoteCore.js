@@ -1,5 +1,5 @@
 import { MBP ,Buffer} from 'meta-buffer-pack'
-import EventEmitter from "eventemitter3/umd/eventemitter3.js";
+import EventEmitter from "eventemitter3";
 import { Boho, BohoMsg, MetaSize } from "boho";
 import { RemoteMsg , PAYLOAD_TYPE , SIZE_LIMIT , ENC_MODE ,STATES} from '../constants.js'
 import { quotaTable } from '../quotaTable.js'
