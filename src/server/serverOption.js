@@ -44,12 +44,6 @@ export let serverOption = {
     limitCounter: 1000
   },
 
-  publishLocalAddress:{
-    use: false,
-    url: '',
-    ch: ''
-  },
-
   auth:{
     delay_auth_fail: 1000,
   }

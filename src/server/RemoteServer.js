@@ -19,17 +19,6 @@ export class RemoteServer extends EventEmitter {
       this.startCongServer(options)
     }
 
-    // publish local ipaddress to global server.
-    if( serverOption.publishLocalAddress.use ){
-      let ip = getLocalAddress();
-      let wsurl= 'ws://'+ip+':'+serverOption.port;
-      console.log(wsurl, ip)
-      let remote = new RemoteWS( serverOption.publishLocalAddress.url )
-      remote.on('ready',e=>{
-        remote.signal( serverOption.publishLocalAddress.ch , wsurl)
-        remote.signal( serverOption.publishLocalAddress.ch+'cong' , ip)
-      }) 
-    }
 
   }
 
