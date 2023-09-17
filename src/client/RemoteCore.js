@@ -129,12 +129,20 @@ export class RemoteCore extends EventEmitter{
 
   // manual login
   login( id, key){
-    console.log('try manual login: ', id)
+    if( !id || !key){
+      console.log('missing id or key.')
+      return
+    } 
+    console.log('manual login: ', id)
+
     if( !key && id.includes('.') ){
       this.boho.set_id_key(id)
-    }else{
+    }else if( id && key){
       this.boho.set_id8(id)
       this.boho.set_key(key)
+    }else{
+      console.log('missing id or key.')
+      return
     }
     this.useAuth = true
     let auth_pack = this.boho.auth_req()
@@ -144,12 +152,20 @@ export class RemoteCore extends EventEmitter{
 
   // auto login
   auth( id, key){
+    if( !id || !key){
+      console.log('missing id or key.')
+      return
+    } 
     console.log('set auto auth: ', id)
+    
     if( !key && id.includes('.') ){
       this.boho.set_id_key(id)
-    }else{
+    }else if( id && key){
       this.boho.set_id8(id)
       this.boho.set_key(key)
+    }else{
+      console.log('missing id or key.')
+      return
     }
     this.useAuth = true
   }
