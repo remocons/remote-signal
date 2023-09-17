@@ -35,13 +35,10 @@ export class Manager{
     this.channel_map = new Map()  //  key: channelName  value: < ServerRemote : Set >
     this.CHANNEL_PREFIX = 'CH:'
     this.CID_PREFIX = 'CID:'
-    this.cid2remote = new Map(); //  map:[ key:cid -> value:client ]
+    this.cid2remote = new Map(); //  map:[ key:cid -> value:remote ]
     this.retain_messages = new Map() // key: tag, data: signalMessage
     this.metric = new Metric(this)
     this.lastSSID = 0;
-
-    // this.uid2remotes = new Map()  
-    // this.uidStores = new Map()
 
     this.pingIntervalID = setInterval(e => {
       this.remotes.forEach(function each(remo) {
@@ -62,75 +59,76 @@ export class Manager{
       });
     }, serverOption.timeout);
 
+    if (serverOption.showMetric) {
+      this.monitIntervalID = setInterval((e) => {
+          this.monitor()
+        }, serverOption.monitorPeriod);
+    }
 
-    this.monitIntervalID = setInterval((e) => {
-      if (serverOption.showMetric) {
-        this.monitor()
-      }
-    }, serverOption.monitorPeriod);
 
   }
 
 
-  addClient(socket, req) {
+  addRemote(socket, req) {
     socket.isAlive = true;
-    let client = new ServerRemote(socket, req, this)
-    this.remotes.add(client)
-    client.send(Buffer.from([RemoteMsg.SERVER_READY]))
-    client.setState(CLIENT_STATE.SENT_SERVER_READY)
-    this.lastSSID = client.ssid;
-    let connectionInfo = `+ IP:${client.ip} #${client.ssid} ${socket.socketType === 'websocket' ? "WS" : "CS"} `;
+    let remote = new ServerRemote(socket, req, this)
+    this.remotes.add(remote)
+    remote.send(Buffer.from([RemoteMsg.SERVER_READY]))
+    remote.setState(CLIENT_STATE.SENT_SERVER_READY)
+    this.lastSSID = remote.ssid;
+    let connectionInfo = `+ IP:${remote.ip} #${remote.ssid} ${socket.socketType === 'websocket' ? "WS" : "CS"} `;
     // console.log( connectionInfo)
     if (this.connectionLogger) this.connectionLogger.log(connectionInfo)
   };
 
 
-  removeClient(client) {
-    // client is ServerRemote 
-    let remoteInfo = `- IP:${client.ip} #${client.ssid} cid:${client.cid} ${client?.socket.socketType === 'websocket' ? "WS" : "CS"} `
+  removeRemote(remote) {
+    // console.log('#### manager.removeRemote()', remote.cid, remote.uid)
+    let remoteInfo = `- IP:${remote.ip} #${remote.ssid} cid:${remote.cid} ${remote?.socket.socketType === 'websocket' ? "WS" : "CS"} `
     if (this.connectionLogger) this.connectionLogger.log(remoteInfo)
-    // console.log('#### manager.removeClient()', client.cid)
-    this.deligateSignal(client, '@state', 'close')
-    this.deligateSignal(client, '@$state', 'close')
+    this.deligateSignal(remote, '@state', 'close')
+    this.deligateSignal(remote, '@$state', 'close')
 
     // remove subscriber 
-    for (let ch of client.channels.keys()) {
+    for (let ch of remote.channels.keys()) {
       if (this.channel_map.has(ch)) {
-        const clients = this.channel_map.get(ch)
-        // console.log(`-- channel [ ${ch} ] removes subscriber id: ${client.cid} `)
-        clients.delete(client)
-        if (clients.size == 0) this.channel_map.delete(ch)
+        const remotes = this.channel_map.get(ch)
+        // console.log(`-- channel [ ${ch} ] removes subscriber id: ${remote.cid} `)
+        remotes.delete(remote)
+        if (remotes.size == 0) this.channel_map.delete(ch)
       }else{
         // console.log('no such a ch: ', ch )
       }
     }
 
-    // If client has retain message(cid publisher):
-
-    // policy
+    // retain message policy
     // type 1. keep if authUser, delete if anonymouse.
-    if( client.boho.isAuthorized ){
+    if( remote.boho.isAuthorized ){
       //keep retain signal.
     }else{
       // anonymouse: remove the cid publish channel
-      for (let ch of client.retain_signal.keys()) {
+      for (let ch of remote.retain_signal.keys()) {
         // console.log('cid retain_signal.keys:', ch )
-        ch = this.CID_PREFIX + client.cid + '@' + ch
+        ch = this.CID_PREFIX + remote.cid + '@' + ch
         if (this.channel_map.has(ch)) {
           this.channel_map.delete(ch)
-          // console.log(`-- deleted cid pub ch [ ${ch} ]. cid publisher id: ${client.cid} `)
+          // console.log(`-- deleted cid pub ch [ ${ch} ]. cid publisher id: ${remote.cid} `)
         }else{
           // console.log('no such a retain_signal tag: ', ch )
         }
       }
     }
  
-    // this.delUserRemote(client )
-    let req = { topic:'delUserRemote'}
-    this.server.emit('account', client, req )
-    this.remotes.delete(client)
-    this.cid2remote.delete(client.cid)
-    client = null
+
+    if( remote.uid && this.server.apiNames.has('account')){
+      let req = { topic:'detachUserRemote'}
+      req.args = ['caller:manager.removeRemote']
+      this.server.emit('account', remote, req )
+    }
+
+    this.remotes.delete(remote)
+    this.cid2remote.delete(remote.cid)
+    remote = null
 
   }
 
@@ -249,13 +247,22 @@ export class Manager{
 
   // signaling to the cid subscribers.
   // example.  sending cid close signal.
-  deligateSignal(client, tag, ...args) {
+  deligateSignal(remote, tag, ...args) {
     let sigPack = this.get_signal_pack(tag, ...args)
-    this.sender(tag, client, sigPack)
+    this.sender(tag, remote, sigPack)
   }
 
+  adminSignal( cid, message){
+    if (this.cid2remote.has(cid)) {
+      this.cid2remote.get(cid).send_enc_mode(message)
+      // return ['ok', 1]
+      return
+    }else{
+      return "no cid"
+    }
+  }
 
-  sender(tag, client, message) {
+  sender(tag, remote, message) {
 
     if( tag.indexOf('$') == 0 ) return ['err', 'prefix $ is reserved for userSet tag.']
 
@@ -264,7 +271,7 @@ export class Manager{
       // ** CID_PUB is not uni-cast but multic-cast.
       // [cid_pub]  @topic ,  @$retainTopic
       // modify signalpack with cid_appneded tag.
-      tag = client.cid + tag;
+      tag = remote.cid + tag;
       message = this.getNewSignalTagMessage(message, tag)
 
       // console.log('cid_pub new tag:', tag, this.getSignalTag(message ))
@@ -298,7 +305,7 @@ export class Manager{
     // HOME_CHANNEL substitution.
     // (blank)#topic  ->  home_channel#topic. 
     if (tag.indexOf('#') === 0) {
-      tag = client.HOME_CHANNEL + tag;
+      tag = remote.HOME_CHANNEL + tag;
     } else if( tag.includes('@')){
       tag = this.CID_PREFIX + tag;
     } else {
@@ -307,17 +314,17 @@ export class Manager{
 
     // retain signal message
     if (tag.includes('$')
-      // && client.boho.isAuthorized
+      // && remote.boho.isAuthorized
       && serverOption.retain.isAvailable
       && serverOption.retain.limitCounter > this.retain_messages.size
       && serverOption.retain.limitSize > message.byteLength
     ) {
       // cid retain signal
       if (tag.includes('@')) {
-        // cid retain signal stored inside client.
+        // cid retain signal stored inside remote.
         let retainTag = tag.split('@')[1]
-        client.retain_signal.set(retainTag, message)
-        // console.log('## cid retain tag, size: ', retainTag, client.retain_signal.size)
+        remote.retain_signal.set(retainTag, message)
+        // console.log('## cid retain tag, size: ', retainTag, remote.retain_signal.size)
       } else {
         // channel retain signal stored inside manager.
         this.retain_messages.set(tag, message)
@@ -331,31 +338,31 @@ export class Manager{
     let sentCounter = 0;
     if (this.channel_map.has(tag)) {
       // console.log('raw channel_map matched tag:', tag)
-      let clients = this.channel_map.get(tag);
-      if (clients.size >= 1) {
+      let remotes = this.channel_map.get(tag);
+      if (remotes.size >= 1) {
         let limit;
         if (serverOption.useQuota.publishCounter) {
-          limit = Math.min(client.quota.publishCounter, clients.size)
+          limit = Math.min(remote.quota.publishCounter, remotes.size)
         } else {
-          limit = clients.size;
+          limit = remotes.size;
         }
-        let peers = clients.values();
+        let peers = remotes.values();
         while (sentCounter < limit) {
           let c = peers.next().value
           if (!c) {
-            // console.log('## null client' )
+            // console.log('## null remote' )
             break;
           }
-          if (c !== client) {
+          if (c !== remote) {
             c.send_enc_mode(message);
             sentCounter++;
           }
         }
 
         if (serverOption.useQuota.publishCounter) {
-          // console.log(`pub >> [${tag}] sent: ${sentCounter} [use quota limit: ${client.quota.publishCounter }] total: ${clients.size} subscribers. ` )
+          // console.log(`pub >> [${tag}] sent: ${sentCounter} [use quota limit: ${remote.quota.publishCounter }] total: ${remotes.size} subscribers. ` )
         } else {
-          // console.log(`pub >> [${tag}] sent: ${sentCounter} [no quota limit] total: ${clients.size} subscribers. ` )
+          // console.log(`pub >> [${tag}] sent: ${sentCounter} [no quota limit] total: ${remotes.size} subscribers. ` )
         }
         return ['ok', sentCounter]
       }
@@ -366,11 +373,11 @@ export class Manager{
 
 
 
-  subscribe(chArr, client) {
+  subscribe(chArr, remote) {
     // console.log('ChannelManager:: subscribe: ',chArr)
     chArr.forEach(tag => {
       if (tag.indexOf('#') === 0) {
-        tag = client.HOME_CHANNEL + tag
+        tag = remote.HOME_CHANNEL + tag
       } else if( tag.includes('@')){
         tag = this.CID_PREFIX + tag;
       } else {
@@ -379,15 +386,15 @@ export class Manager{
 
       // 1. set channel map
       if (this.channel_map.has(tag)) {
-        this.channel_map.get(tag).add(client)
+        this.channel_map.get(tag).add(remote)
       } else {
-        this.channel_map.set(tag, new Set([client]))
+        this.channel_map.set(tag, new Set([remote]))
       }
       // console.log('Manager::map:', this.channel_map.keys() )
 
-      // 2.add to client channels.
-      client.channels.add(tag)
-      // console.log('client.channels set.', client.channels  )
+      // 2.add to remote channels.
+      remote.channels.add(tag)
+      // console.log('remote.channels set.', remote.channels  )
 
       // 3. send retain message if available.
       if (tag.includes('$')
@@ -409,33 +416,33 @@ export class Manager{
           retainMessage = this.retain_messages.get(tag)
         }
         // console.log('send retainMessage buffer',retainMessage)
-        if(retainMessage) client.send_enc_mode(retainMessage)
+        if(retainMessage) remote.send_enc_mode(retainMessage)
 
       }
 
     })
-    return client.channels.size;
+    return remote.channels.size;
   }
 
-  unsubscribe(chArr, client) {
-    //unsubscribe all channels of the client.
+  unsubscribe(chArr, remote) {
+    //unsubscribe all channels of the remote.
     if (chArr.length == 1 && chArr[0] == "") {
 
-      client.channels.forEach(ch => {
+      remote.channels.forEach(ch => {
         if (this.channel_map.has(ch)) {
-          let clients = this.channel_map.get(ch)
-          clients.delete(client)
-          if (clients.size == 0) this.channel_map.delete(ch)
+          let remotes = this.channel_map.get(ch)
+          remotes.delete(remote)
+          if (remotes.size == 0) this.channel_map.delete(ch)
         }
       })
-      client.channels.clear();
+      remote.channels.clear();
 
     } else {
       // unsubscribe each channels.
       chArr.forEach(ch => {
         // substitution home_channel
         if (ch.indexOf('#') === 0) {
-          ch = client.HOME_CHANNEL + ch;
+          ch = remote.HOME_CHANNEL + ch;
         } else if( ch.includes('@')){
           ch = this.CID_PREFIX + ch;
         } else {
@@ -445,17 +452,17 @@ export class Manager{
 
         // delete manager map.
         if (this.channel_map.has(ch)) {
-          let clients = this.channel_map.get(ch)
-          clients.delete(client)
-          if (clients.size == 0) this.channel_map.delete(ch)
+          let remotes = this.channel_map.get(ch)
+          remotes.delete(remote)
+          if (remotes.size == 0) this.channel_map.delete(ch)
         } else {
           // console.log('##no such a ch', ch )
         }
-        client.channels.delete(ch)
+        remote.channels.delete(ch)
       })
     }
 
-    // console.log( '-- result unsub:', client.channels )
+    // console.log( '-- result unsub:', remote.channels )
 
   }
 

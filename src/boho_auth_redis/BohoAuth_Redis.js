@@ -1,14 +1,14 @@
 
 /**
- * Boho Symmetric Key Authentication.
- * Redis DB Adapter
+ * BohoAuth_Redis
  */
-
+import { BohoAuthCore } from '../boho_auth/BohoAuthCore.js';
 import { sha256 } from 'boho'
 const DEVICE_PREFIX = "device:"
 
-export class BohoAuthRedis{
+export class BohoAuth_Redis extends BohoAuthCore{
   constructor( redisClient ){
+    super()
     // default redis url and port
     if( !redisClient ){
       throw new Error("BohoAuthRedis constructor: no redisClient")

@@ -1,5 +1,17 @@
 import fs from 'fs'
 
+const formatter = new Intl.DateTimeFormat('ko-KR', {
+  // hour12: true,
+  // hour: 'numeric',
+  // minute: '2-digit',
+  // second: '2-digit'
+  year: 'numeric', month: 'numeric', day: 'numeric',
+  hour: 'numeric', minute: 'numeric', 
+  hour12: false,
+  timeZone: 'Asia/Seoul'
+});
+
+
 export class FileLogger{
   constructor(path ){
     this.file = fs.openSync(path ,'a+')
@@ -7,18 +19,12 @@ export class FileLogger{
   }
   
   log(msg){
-    let format = new Date() + " "+ msg +'\n';
+    let format =formatter.format(new Date()) + " "+ msg +'\n';
     fs.write( this.file, format , (err) => {
       if (err) throw err;
     })
 
   }
 
-
-  timeStamp(){
-    let now = new Date()
-    let time = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`
-    return time
-  }
 
 }

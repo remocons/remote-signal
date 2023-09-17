@@ -6,71 +6,52 @@ import net from'net'
 export class RemoteCongSocket extends RemoteCore{
   constructor( url  ) {
     super( url );
-    if(url) this.connect();
-  }
-
-  runChecker() {
-    let state = this.socket?.readyState;
-    if ( !this.socket || !(state === 'open' || state === 'opening')  ) {
-      this.connect();
-    } 
+    if(url) this.open();
   }
 
   close() {
     this.socket?.end();
     this.socket = null;
-    clearInterval(this.runCheckIntervalID);
-    this.runCheckIntervalID = null
   }
 
-  open(url){
-    this.connect(url)
+  stop() {
+    this.close()
+    clearInterval(this.connectionCheckerIntervalID);
+    this.connectionCheckerIntervalID = null
   }
-
-
-  connect(url) {
-    if( !url && !this.serverURL ) return;
-    if( url && !this.serverURL ){ // first connection
-      this.serverURL = url;
-    }else if( url && url !== this.serverURL ){
-      // server url changed
-      this.serverURL = url;
-      if( this.socket ){
-        // if old socket still remain: close socket and return.
-        // runChecker is running. see u next runchecker time.
-        // console.log("## remote change server.")
-        this.socket?.end();
-        this.socket = null; 
-        return;
-      }
-    }
-
-    if(!this.runCheckIntervalID) this.runCheckIntervalID = setInterval(this.runChecker.bind(this), this.runCheckPeriod);
- 
-   
-    // TCP Socket
-      let urlObj = new URL( this.serverURL )
-      // console.log('connect port, url',urlObj.port,  urlObj.hostname )
-      this.socket = net.createConnection( urlObj.port,  urlObj.hostname )
-      this.stateChange('opening')
-
-      this.socket.on('connect' , e=>{
-        // console.log('cong connected' )
-        this.congRx = new CongRx();
-        this.socket.pipe( this.congRx )
-        this.congRx.on("data", this.onTCPSocketMessage.bind(this));
-        this.emit('open') 
-      })
-
-      this.socket.on('error', e=>{ 
-        this.emit('error', e)
-      })
-
-      this.socket.on('close', e=>{ 
-        this.emit('close');
-      })
   
-  } //end connect 
+  keepAlive() {
+    let state = this.socket?.readyState;
+    if ( !this.socket || !(state === 'open' || state === 'opening')  ) {
+      this.open();
+    } 
+  }
+
+
+  createConnection(url){
+    // TCP Socket
+    let urlObj = new URL( url )
+    // console.log('connect port, url',urlObj.port,  urlObj.hostname )
+    this.socket = net.createConnection( urlObj.port,  urlObj.hostname )
+    this.stateChange('opening')
+
+    this.socket.on('connect' , ()=>{
+      // console.log('cong connected' )
+      this.congRx = new CongRx();
+      this.socket.pipe( this.congRx )
+      this.congRx.on("data", this.onTCPSocketMessage.bind(this));
+      this.emit('open') 
+    })
+
+    this.socket.on('error', e=>{ 
+      this.emit('error', e)
+    })
+
+    this.socket.on('close', ()=>{ 
+      this.emit('close');
+    })
+
+  }
 
   onTCPSocketMessage( data ) {
     this.rxCounter++;

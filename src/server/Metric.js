@@ -62,7 +62,7 @@ export class Metric{
     return list
   }
 
-  getClientByCId( cid , mode = 1){
+  getRemoteByCId( cid , mode = 1){
 
     if( this.manager.cid2remote.has(cid)){
       let remote = this.manager.cid2remote.get(cid)

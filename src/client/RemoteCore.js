@@ -7,15 +7,27 @@ import { quotaTable } from '../quotaTable.js'
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
+function byteToUrl( buffer){
+  //ipv4(4bytes) , port(2bytes)
+  if(buffer.byteLength != 6 ) return 
+  let address = buffer[0].toString() + "."+ buffer[1].toString()
+                + "."+ buffer[2].toString() + "."+ buffer[3].toString();
+  let port = (buffer[4] << 8) + buffer[5] 
+
+  return address +':'+ port.toString()
+}
+
 export class RemoteCore extends EventEmitter{
   constructor( url) {
     super();
-    this.cid = ""  // get from server  CID_RES
-    this.ip = ""  // get from server  IAM_RES message.
+    this.cid = ""   // get from the server  CID_RES
+    this.ip = ""    // get from the server  IAM_RES message.
     this.socket = null;
-    this.serverURL = url;
-    this.state = STATES.CLOSED;  // state: number
-    this.stateName = this.getStateName()
+    this.url = url; // main server url
+    this.url2 = ""  // redirection url
+    this.url2closeCounter = 0
+    this.state = STATES.CLOSED;  // Number type
+    this.stateName = this.getStateName() // String type
 
     this.txCounter = 0;
     this.rxCounter = 0;
@@ -23,20 +35,19 @@ export class RemoteCore extends EventEmitter{
     this.rxBytes = 0;
     
     this.lastTxRxTime = Date.now();
-    // this.lastTxRxTimeOut = 65000;  // timeout after trx.
-    this.runCheckPeriod = 3000 ; 
-    this.runCheckIntervalID = null;
+    this.connectionCheckerPeriod = SIZE_LIMIT.CONNECTION_CHECKER_PERIOD ; 
+    this.connectionCheckerIntervalID = null;
 
     this.boho = new Boho()
-    this.TLS = false // true if connection opened with wss:// protocol (TLS)
+    this.TLS = false // true if protocol is wss(TLS)
     this.encMode = ENC_MODE.AUTO; 
     this.useAuth = false;
 
     this.nick = "";
     this.channels = new Set()
     this.promiseMap = new Map()
-    this.promiseTimeOut = 3000
-    this.mid = 0
+    this.promiseTimeOut = SIZE_LIMIT.PROMISE_TIMEOUT
+    this.mid = 0  // promise message id 
 
     this.level = 0; // also defaultQuotaLevel
     this.quota = quotaTable[ this.level ];
@@ -44,9 +55,9 @@ export class RemoteCore extends EventEmitter{
 
     this.linkMap = new Map()
 
-    this.on('open',this.onOpenEventHandler.bind(this))
-    this.on('close',this.onCloseEventHandler.bind(this))
-    this.on('socket_data',this.onWrapSocketMessageEventHandler.bind(this))
+    this.on('open',this.onOpen.bind(this))
+    this.on('close',this.onClose.bind(this))
+    this.on('socket_data',this.onData.bind(this))
     // this.on('auth_fail',this.onAuthFail.bind(this))
     // this.on('server_signal', this.onServerSignal.bind(this))
   }
@@ -58,17 +69,59 @@ export class RemoteCore extends EventEmitter{
   // onServerSignal(event, data ){
   //   console.log('onServerSignal', event, data )
   // }
+  
+  redirect(url){
+    this.url2 = url;
+    this.url2closeCounter = SIZE_LIMIT.REDIRECTION_CLOSE;
+    this.close()
+  }
 
-  onOpenEventHandler( ){
-    if( this.serverURL.includes("wss://" )){
+  open(url ) {
+    if( !url && !this.url && !this.url2 ) return;
+    if( url ){
+        if( !this.url ){ // first connection
+          this.url = url
+        }else if( url !== this.url ){ // main server change
+          this.url = url;
+          if( this.socket ){
+            this.close()
+            return
+          }
+        }
+    } 
+
+    let _url
+    if( this.url2 ){
+      _url = this.url2
+    }else if( this.url ){
+      _url = this.url
+    }
+    
+    this.createConnection( _url)
+    if(!this.connectionCheckerIntervalID) this.connectionCheckerIntervalID = setInterval(this.keepAlive.bind(this), this.connectionCheckerPeriod);
+  }
+
+  onOpen( ){
+    if( this.url.includes("wss://" )){
       this.TLS = true;
+    }
+    if(this.url2 ){
+      this.url2closeCounter = SIZE_LIMIT.REDIRECTION_CLOSE;
     }
     this.stateChange('open' )
   }
 
-  onCloseEventHandler(){
+  onClose(){
     this.boho.isAuthorized = false;
     this.cid = ""
+    if(this.url2 ){
+      if(this.url2closeCounter < 0  ){
+        this.url2 = ""
+      }else{
+        this.url2closeCounter--;
+      }
+      // console.log('redirection close counter:', this.url2closeCounter)
+    }
     this.stateChange('closed' )
 
     // console.log('-- remote is closed:')
@@ -101,7 +154,7 @@ export class RemoteCore extends EventEmitter{
     this.useAuth = true
   }
 
-  onWrapSocketMessageEventHandler( buffer ){
+  onData( buffer ){
     // console.log('remote rcv socket_message', buffer )
     //check first byte (remote message type)
    let msgType = buffer[0];
@@ -193,7 +246,24 @@ export class RemoteCore extends EventEmitter{
     case RemoteMsg.SERVER_CLEAR_AUTH :
       this.useAuth = false;
       this.boho.clearAuth();
-      this.close();// close() server client both.
+      this.stop();
+      break;
+
+    case RemoteMsg.SERVER_REDIRECT :
+      console.log("SERVER_REDIRECT")
+      console.log( buffer.toString('hex'))
+      let host_port;
+      if( buffer.byteLength == 7){ // ipv4 ,port
+        console.log('ipv4,port')
+        host_port = byteToUrl( buffer.subarray(1)) 
+      }else{ // domain url
+        console.log('domainURL')
+        host_port = decoder.decode( buffer.subarray(1)) 
+      }
+      const protocol = 'ws://'
+      let url = protocol + host_port
+      console.log('url: ', url )
+      this.redirect(url)
       break;
 
     case RemoteMsg.SERVER_READY :
@@ -328,7 +398,7 @@ export class RemoteCore extends EventEmitter{
         break;
         case BohoMsg.AUTH_FAIL:
           this.stateChange('auth_fail','server reject auth.' )
-          console.log('auth_fail', 'Iserver reject auth.' )
+          console.log('auth_fail', 'server reject auth.' )
           break;
           case BohoMsg.AUTH_ACK:
             if(this.boho.check_auth_ack_hmac( buffer ) ){
@@ -836,7 +906,7 @@ export class RemoteCore extends EventEmitter{
       rx: this.rxCounter, 
       txb: this.txBytes, 
       rxb: this.rxBytes,
-      last: ( Date.now() - this.lastTxRxTime) * 1000
+      last: ( Date.now() - this.lastTxRxTime) / 1000
     }
 
   }

@@ -1,5 +1,5 @@
 /**
- * Boho Symmetric Key Authentication.
+ * BohoAuthCore
  */
 
 import { MBP } from 'meta-buffer-pack'
@@ -10,14 +10,12 @@ import { RemoteMsg ,CLIENT_STATE } from '../constants.js'
 import { FileLogger } from '../server/FileLogger.js'
 
 const decoder = new TextDecoder()
-export class BohoAuth{
-  constructor( auth_database){ 
-    this.db = auth_database;
+export class BohoAuthCore{
+  constructor(){ 
     this.authLogger;
     if( serverOption.fileLogger.auth.use ){
       this.authLogger = new FileLogger( serverOption.fileLogger.auth.path)
       console.log('BohoAuth: begin file logger.[auth]')
-
     }
   }
 
@@ -52,7 +50,7 @@ export class BohoAuth{
       }
 
       //2. get key of id from DB
-      let authInfo = await this.db.getAuth( id )
+      let authInfo = await this.getAuth( id )
 
       if(serverOption.debug.showAuthInfo ){
         console.log('##### authInfo',authInfo )
@@ -156,6 +154,7 @@ export class BohoAuth{
         if( peer.isAdmin ) peerInfo = "#ADMIN# "+ peerInfo
         this.authLogger.log( peerInfo )
       } 
+      return authInfo
     } catch (error) {
       this.send_auth_fail( peer , 'caught: unknown error' + error );
     }

@@ -13,10 +13,10 @@ export class ServerRemote extends ServerRemoteCore {
 
     if( this.socketType === 'websocket' ){
       this.TLS = req.headers["x-forwarded-proto"] === 'https' ?  true : false;
-      this.ip = this.getClientIP(req);
+      this.ip = this.getRemoteIP(req);
     }else{
       this.TLS = false;
-      this.ip = this.getClientIP( socket.remoteAddress )
+      this.ip = this.getRemoteIP( socket.remoteAddress )
     }
     
 
@@ -43,7 +43,7 @@ export class ServerRemote extends ServerRemoteCore {
       socket.on("ping", this.receiveMonitor.bind(this));
       socket.on("error", (e) => { console.log('Websocket error',e, e.code) }); 
       socket.onclose = (e) => {
-        this.manager.removeClient(this);
+        this.manager.removeRemote(this);
       };
     }else{ // TCP else
       this.congRx = new CongRx();
@@ -63,7 +63,7 @@ export class ServerRemote extends ServerRemoteCore {
       socket.on('error', e=>{ console.log('TCP Socket error',e )})
       socket.on('close', e=>{ 
         // console.log('cong socket close event')
-        this.manager.removeClient(this);
+        this.manager.removeRemote(this);
         })
       
     }
@@ -138,7 +138,7 @@ export class ServerRemote extends ServerRemoteCore {
 
   // 정리요함
   // nginx https reversproxy , http redirect , direct tcp 
-  getClientIP(req) { //req or ip string
+  getRemoteIP(req) { //req or ip string
     let ip;
     if( req && req.headers ){
       ip = req.headers["x-forwarded-for"];
@@ -153,7 +153,7 @@ export class ServerRemote extends ServerRemoteCore {
     } else {
       ip = "0.0.0.0";
     }
-    // console.log('getClientIP', ip )
+    // console.log('getRemoteIP', ip )
     
     return ip;
   }

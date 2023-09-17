@@ -20,7 +20,7 @@ export async function request( remote, req) {
       } else if (cmd == 'remote' || cmd == 'client') {
         let cid = req.$[0]
         let mode = req.$[1]
-        if (cid) result = remote.manager.metric.getClientByCId(cid, mode)
+        if (cid) result = remote.manager.metric.getRemoteByCId(cid, mode)
   
       } else if (cmd == 'close') {
         if (req.$[0]) result = remote.manager.closeRemoteByCId(req.$[0])

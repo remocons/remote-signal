@@ -12,6 +12,8 @@ export class RemoteServer extends EventEmitter {
     super();
     // console.log('RemoteServer input options', options )
     this.manager = new Manager(this, authManager ,requestHandler)
+    this.apiNames = new Set()
+
     this.startWSServer(options)
     if(options.congPort){ 
       this.startCongServer(options)
@@ -62,7 +64,7 @@ export class RemoteServer extends EventEmitter {
     
     this.wss.on('connection', (ws, req) => {
       ws.socketType = 'websocket'
-      this.manager.addClient(ws, req)
+      this.manager.addRemote(ws, req)
     })
 
 
@@ -72,7 +74,7 @@ export class RemoteServer extends EventEmitter {
     console.log('congServer listen:', options.congPort)
 
     this.congServer = net.createServer((socket) => {
-      this.manager.addClient(socket)
+      this.manager.addRemote(socket)
     })
       .on('error', (err) => {
         console.log('### congServer error:', err)
@@ -84,6 +86,7 @@ export class RemoteServer extends EventEmitter {
 
 
   api( target, api , adminOnly = false){
+    this.apiNames.add( target )
     
     // type1,. single request function
     if( typeof api.request == 'function'){
@@ -110,7 +113,7 @@ export class RemoteServer extends EventEmitter {
           api[req.topic](remote, req )
           return
         }else{
-          r = "No such a Request topic: " + req.topic
+          r = `target: ${req.target} has not topic name: ${req.topic}`
         }
         remote.response(req.mid, STATUS.ERROR ,r )
       })

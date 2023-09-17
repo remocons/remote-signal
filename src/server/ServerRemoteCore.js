@@ -182,7 +182,7 @@ export class ServerRemoteCore {
             this.close()
           }
           if (!this.cid) {
-            this.cid = '?' + webcrypto.getRandomValues(Buffer.alloc(3)).toString('base64')
+            this.cid = '?' + webcrypto.getRandomValues(Buffer.alloc(3)).toString('base64url')
             this.manager.cid2remote.set(this.cid, this)
           }
 
@@ -285,9 +285,13 @@ export class ServerRemoteCore {
             let req = MBP.unpack( message )
             // console.log('request unpack req', req)
             if(req){
-              console.log('request target:', req.target, 'topic:', req.topic)
+              // console.log('request target:', req.target, 'topic:', req.topic)
               if( !req.target || !req.topic ) return
-              this.manager.server.emit( req.target, this , req  )
+              if(this.manager.server.apiNames.has(req.target)){
+                this.manager.server.emit( req.target, this , req  )
+              }else{
+              console.log('UnKnown API req: ', req.target)
+              }
             }
           } catch (e) {
             console.log('request catch error', e)
@@ -327,6 +331,18 @@ export class ServerRemoteCore {
           this.setState(CLIENT_STATE.RECV_AUTH_HMAC)
           //async
           this.manager.bohoAuth.verify_auth_hmac(message, this)
+          .then(authInfo=>{
+            if(authInfo){
+              this.manager.deligateSignal(remote, '@$name', authInfo.name)
+              // console.log('device login success authInfo', authInfo)
+              // this.manager.sender('@$name', authInfo.name )
+            }
+
+          })
+          .catch(e=>{
+
+          })
+
           return;
 
         default:

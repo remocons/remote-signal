@@ -1,4 +1,3 @@
-import{ MBP } from "meta-buffer-pack"
 
 // client remote state
 export const STATES = {
@@ -37,7 +36,12 @@ for (let c in ENC_MODE) { ENC_MODE[ENC_MODE[c]] = c }
 
 export const SIZE_LIMIT = {
   TAG_LEN1: 255,
-  TAG_LEN2: 65535
+  TAG_LEN2: 65535,
+  REDIRECTION_CLOSE: 2,
+  CONNECTION_CHECKER_PERIOD: 3000,
+  PROMISE_TIMEOUT: 5000,
+  DID: 8,
+  CID: 12
 }
 
 export let PAYLOAD_TYPE = {
@@ -89,6 +93,7 @@ export let RemoteMsg = {
   CID_RES: 0xC2,  
   QUOTA_LEVEL: 0xC3,
   SERVER_CLEAR_AUTH: 0xC4, 
+  SERVER_REDIRECT: 0xC5,
 
   // ..
   LOOP: 0xCB,

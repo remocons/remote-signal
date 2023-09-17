@@ -1,9 +1,9 @@
 // table index related with:
-// - AUTH DATABASE::  info.level
+// - AUTH database level
 // - serverOption.defaultQuotaIndex
 
 // quota example
-// index should 0~255.
+// index range: 0~255.
 export let quotaTable = {
   // CongSocket
   0: { // default. anonymouse:
@@ -48,7 +48,7 @@ export let quotaTable = {
     trafficRate: 1048576 * 20
   },
   
-  // you can add your limit.
+  // you can add your custom quota level.
 
   // super admin or root user.
   // to monitor, metric, sudo command, db acess
