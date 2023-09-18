@@ -9,7 +9,6 @@ export * from 'boho'
 export { BohoAuthCore } from './boho_auth/BohoAuthCore.js'
 export { BohoAuth_File } from './boho_auth/BohoAuth_File.js'
 export { BohoAuth_Redis } from './boho_auth_redis/BohoAuth_Redis.js'
-export { BohoAuth_Remote } from './boho_auth_redis/BohoAuth_Remote.js'
 
 export * as api_reply  from './server/api/api_reply.js'
 export * as api_sudo  from './server/api/api_sudo.js'

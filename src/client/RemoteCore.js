@@ -156,7 +156,7 @@ export class RemoteCore extends EventEmitter{
       console.log('no id and key.')
       return
     } 
-    console.log('set auto auth: ', id)
+    // console.log('set auto auth: ', id)
 
     if( !key && id.includes('.') ){
       this.boho.set_id_key(id)
