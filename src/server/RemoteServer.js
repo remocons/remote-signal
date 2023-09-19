@@ -1,19 +1,19 @@
 import net from 'net'
 import EventEmitter from 'events'
 import { WebSocketServer } from 'ws'
-import { Manager }  from './Manager.js'
+import { Manager } from './Manager.js'
 import { serverOption } from './serverOption.js'
 import { STATUS } from './api/api_constant.js'
 export class RemoteServer extends EventEmitter {
 
-  constructor(options, authManager ,requestHandler) {
+  constructor(options, authManager, requestHandler) {
     super();
     // console.log('RemoteServer input options', options )
-    this.manager = new Manager(this, authManager ,requestHandler)
+    this.manager = new Manager(this, authManager, requestHandler)
     this.apiNames = new Set()
 
     this.startWSServer(options)
-    if(options.congPort){ 
+    if (options.congPort) {
       this.startCongServer(options)
     }
 
@@ -41,14 +41,17 @@ export class RemoteServer extends EventEmitter {
     this.wss = new WebSocketServer(options)
     this.wss.setMaxListeners(0)
 
-    this.wss.on('error', (e) => {
-      console.error('### ws server error:', e)
+    this.wss.on('error', (err) => {
+      console.error('### ws server error:', err.message)
+      if(err.code == 'EADDRINUSE'){
+        process.exit()
+      }
     })
 
-    this.wss.on('close', (e) => {
-      console.log('### WS server closed.', e)
+    this.wss.on('close', (err) => {
+      console.log('### WS server closed.', err)
     })
-    
+
     this.wss.on('connection', (ws, req) => {
       ws.socketType = 'websocket'
       this.manager.addRemote(ws, req)
@@ -64,7 +67,10 @@ export class RemoteServer extends EventEmitter {
       this.manager.addRemote(socket)
     })
       .on('error', (err) => {
-        console.log('### congServer error:', err)
+        console.log('### cong server error:', err.message)
+        if(err.code == 'EADDRINUSE'){
+          process.exit()
+        }
       }).listen(serverOption.congPort, () => {
         // console.log('congsocket server bound' );
       });
@@ -72,46 +78,46 @@ export class RemoteServer extends EventEmitter {
 
 
 
-  api( target, api){
-    this.apiNames.add( target )
+  api(target, api) {
+    this.apiNames.add(target)
 
     // common checkPermission
-    if(!api.checkPermission || typeof api.checkPermission != 'function' ){
+    if (!api.checkPermission || typeof api.checkPermission != 'function') {
       throw new Error('wrong api interface. no checkPermission function.')
     }
-    
+
 
     // type1,. single request function
-    if( typeof api.request == 'function' ){
-      this.on( target, (remote, req)=>{
-        if(  api.checkPermission(remote ,req) ){
-          api.request( remote, req ) 
-        }else{
-          remote.response(req.mid, STATUS.ERROR , "NO PERMISSION." )
+    if (typeof api.request == 'function') {
+      this.on(target, (remote, req) => {
+        if (api.checkPermission(remote, req)) {
+          api.request(remote, req)
+        } else {
+          remote.response(req.mid, STATUS.ERROR, "NO_PERMISSION.")
         }
-      })
-      
-    // type2. multiple functions
-    }else{ 
-      let apiList = []
-      Object.keys( api ).forEach( v=>{ 
-        if( typeof api[v] === 'function' ) apiList.push(v)  
       })
 
-      this.on( target, ( remote, req)=>{
+      // type2. multiple functions
+    } else {
+      let apiList = []
+      Object.keys(api).forEach(v => {
+        if (typeof api[v] === 'function') apiList.push(v)
+      })
+
+      this.on(target, (remote, req) => {
         let r;
-        if( !api.checkPermission(remote, req) ){
-          r = "NO PERMISSION."
-        }else{
-          if( apiList.includes( req.topic ) ){
-            api[req.topic](remote, req )
+        if (!api.checkPermission(remote, req)) {
+          r = "NO_PERMISSION."
+        } else {
+          if (apiList.includes(req.topic)) {
+            api[req.topic](remote, req)
             return
-          }else{
+          } else {
             r = `target: ${req.target} has not topic name: ${req.topic}`
-          }          
+          }
         }
-        
-        remote.response(req.mid, STATUS.ERROR ,r )
+
+        remote.response(req.mid, STATUS.ERROR, r)
       })
 
 
@@ -119,5 +125,5 @@ export class RemoteServer extends EventEmitter {
 
     return this
   }
-  
+
 }
