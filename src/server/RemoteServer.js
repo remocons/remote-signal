@@ -3,8 +3,6 @@ import EventEmitter from 'events'
 import { WebSocketServer } from 'ws'
 import { Manager }  from './Manager.js'
 import { serverOption } from './serverOption.js'
-import { getLocalAddress } from '../util.js'
-import { RemoteWS } from '../client/RemoteWS.js'
 import { STATUS } from './api/api_constant.js'
 export class RemoteServer extends EventEmitter {
 
@@ -74,16 +72,22 @@ export class RemoteServer extends EventEmitter {
 
 
 
-  api( target, api , adminOnly = false){
+  api( target, api){
     this.apiNames.add( target )
+
+    // common checkPermission
+    if(!api.checkPermission || typeof api.checkPermission != 'function' ){
+      throw new Error('wrong api interface. no checkPermission function.')
+    }
     
+
     // type1,. single request function
-    if( typeof api.request == 'function'){
+    if( typeof api.request == 'function' ){
       this.on( target, (remote, req)=>{
-        if( adminOnly && !remote.isAdmin){
-          remote.response(req.mid, STATUS.ERROR , "NO PERMISSION." )
-        }else{
+        if(  api.checkPermission(remote ,req) ){
           api.request( remote, req ) 
+        }else{
+          remote.response(req.mid, STATUS.ERROR , "NO PERMISSION." )
         }
       })
       
@@ -96,16 +100,21 @@ export class RemoteServer extends EventEmitter {
 
       this.on( target, ( remote, req)=>{
         let r;
-        if( adminOnly && !remote.isAdmin){
+        if( !api.checkPermission(remote, req) ){
           r = "NO PERMISSION."
-        }else if( apiList.includes( req.topic ) ){
-          api[req.topic](remote, req )
-          return
         }else{
-          r = `target: ${req.target} has not topic name: ${req.topic}`
+          if( apiList.includes( req.topic ) ){
+            api[req.topic](remote, req )
+            return
+          }else{
+            r = `target: ${req.target} has not topic name: ${req.topic}`
+          }          
         }
+        
         remote.response(req.mid, STATUS.ERROR ,r )
       })
+
+
     }
 
     return this

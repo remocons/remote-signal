@@ -1,5 +1,14 @@
 import { STATUS } from './api_constant.js'
 
+const MIN_LEVEL = 255;
+
+export function checkPermission(remote){
+  if( remote.level >= MIN_LEVEL ){
+    return true
+  }else{
+    return false
+  }
+}
 
 export async function request( remote, req) {
     // console.log(req )

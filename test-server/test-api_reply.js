@@ -5,6 +5,6 @@ serverOption.showMessage = 'message';
 // no authManager
 const rs = new RemoteServer( serverOption ,null )
 // api  response module
-rs.api('reply', api_reply , false)
+rs.api('reply', api_reply)
 
 console.log( 'serverOption:', serverOption )

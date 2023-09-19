@@ -3,6 +3,16 @@ import { STATUS } from './api_constant.js'
 import { redisClient } from './redisClient.js'
 
 
+const MIN_LEVEL = 200;
+
+export function checkPermission(remote, req){
+  if( remote.level >= MIN_LEVEL ){
+    return true
+  }else{
+    return false
+  }
+}
+
 export async function get( remote , req)
 {
   let r, status = STATUS.OK;

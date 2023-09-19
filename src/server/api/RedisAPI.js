@@ -1,11 +1,23 @@
 import { STATUS } from './api_constant.js'
 
+const MIN_LEVEL = 200;
+
 export class RedisAPI{
-  constructor( redisClient){
+  constructor( redisClient, _minLevel ){
     if( !redisClient ){
       throw new Error("RedisAPI constructor: no redisClient")
     }
     this.redis = redisClient
+    this.minLevel = _minLevel ? _minLevel : MIN_LEVEL
+  }
+
+
+  checkPermission(remote ,req){
+    if( remote.level >= this.minLevel ){
+      return true
+    }else{
+      return false
+    }
   }
 
   async request(remote, req ){
@@ -13,7 +25,7 @@ export class RedisAPI{
     let result;
     let status = STATUS.OK; // *0~127: ok ,  128~*255 :error
     try {
-      console.log(req)
+      // console.log(req)
       let cmd = req.topic
       if(cmd == 'set'){
         result = await this.redis.set( ...req.$ )

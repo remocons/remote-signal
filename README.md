@@ -35,7 +35,7 @@ This library provides a server and client for doing signaling(messaging) with pe
   - or use Arduino Library Manager: `RemoteSignal`
 - CLI program 
   - `remocon` [ [github](https://github.com/congtrol/remocon) | [npm](https://www.npmjs.com/package/remocon) ]
-  - install: `npm i -g remocon`
+  - install: `sudo npm i -g remocon` or  `npm i -g remocon`  
   - support mac, linux and windows.
   - server and client
 
