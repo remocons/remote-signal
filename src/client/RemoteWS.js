@@ -61,7 +61,7 @@ export class RemoteWS extends RemoteCore{
       this.txBytes += data.byteLength
       this.lastTxRxTime = Date.now();
     }else{
-      console.log('send()::socket not open')
+      console.log('')
     }
   }
  

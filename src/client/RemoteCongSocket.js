@@ -1,5 +1,5 @@
 import { RemoteCore } from "./RemoteCore.js"
-import { CongTxSync, CongRx } from './CongPacket.js'
+import { pack, CongRx } from './CongPacket.js'
 import net from'net'
 
 
@@ -31,7 +31,7 @@ export class RemoteCongSocket extends RemoteCore{
   createConnection(url){
     // TCP Socket
     let urlObj = new URL( url )
-    // console.log('connect port, url',urlObj.port,  urlObj.hostname )
+    // console.log('connect to hostname:', urlObj.hostname , 'port:', urlObj.port )
     this.socket = net.createConnection( urlObj.port,  urlObj.hostname )
     this.stateChange('opening')
 
@@ -66,14 +66,14 @@ export class RemoteCongSocket extends RemoteCore{
   socket_send(data) {  
     if( this.socket?.readyState === 'open'){
       // console.log('tcp send raw payload:', data)
-      let packData = CongTxSync(data);
+      let packData = pack(data);
       // console.log('tcp send cong packed:', packData)
       this.socket.write( packData )
       this.txCounter++;
       this.txBytes += packData.byteLength;
       this.lastTxRxTime = Date.now();
     }else{
-      console.log('send()::socket not open')
+      console.log('.')
     }
   }
  

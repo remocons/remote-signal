@@ -1,4 +1,4 @@
-import { CongTxSync, CongRx } from '../client/CongPacket.js'
+import { pack, CongRx } from '../client/CongPacket.js'
 import { ServerRemoteCore } from './ServerRemoteCore.js';
 import { serverOption } from './serverOption.js';
 import { RemoteMsg } from '../constants.js';
@@ -218,7 +218,7 @@ export class ServerRemote extends ServerRemoteCore {
 
     }else{ //CongSocket
       if( this.socket.readyState == 'open'){
-        this.socket.write( CongTxSync(message) )
+        this.socket.write( pack(message) )
       }else{
         console.log('ServerRemote::send(), CongSocket not open #'+this.ssid + ' cid:' , this.cid + ':' + this.getStateName() )
         this.close( true )

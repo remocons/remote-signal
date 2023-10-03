@@ -9,7 +9,7 @@ export const CongType = {
 }
 
 // support LittleEndian system.
-export function CongTxSync(payload) {
+export function pack(payload) {
 
   if (payload.byteLength < 256) { //one byte len
     return MBP.pack(

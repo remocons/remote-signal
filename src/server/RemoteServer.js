@@ -4,6 +4,7 @@ import { WebSocketServer } from 'ws'
 import { Manager } from './Manager.js'
 import { serverOption } from './serverOption.js'
 import { STATUS } from './api/api_constant.js'
+
 export class RemoteServer extends EventEmitter {
 
   constructor(options, authManager, requestHandler) {
