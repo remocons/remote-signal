@@ -31,7 +31,11 @@ export class RemoteCongSocket extends RemoteCore{
   createConnection(url){
     // TCP Socket
     let urlObj = new URL( url )
-    // console.log('connect to hostname:', urlObj.hostname , 'port:', urlObj.port )
+    // console.log(urlObj)
+    if( !urlObj.protocol != "cong://"){ 
+      urlObj = new URL( 'cong://'+ url )
+    }
+    // console.log('congSocket url:', urlObj )
     this.socket = net.createConnection( urlObj.port,  urlObj.hostname )
     this.stateChange('opening')
 

@@ -13,7 +13,9 @@ export class RemoteServer extends EventEmitter {
     this.manager = new Manager(this, authManager, requestHandler)
     this.apiNames = new Set()
 
-    this.startWSServer(options)
+    if(options.port != 0){
+      this.startWSServer(options)
+    }
     if (options.congPort) {
       this.startCongServer(options)
     }

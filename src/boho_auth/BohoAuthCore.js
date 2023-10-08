@@ -79,7 +79,7 @@ export class BohoAuthCore{
       // console.log('-- found: authKey of id: ', id, authKey.toString('hex'))
       let auth_ack = peer.boho.check_auth_hmac( infoPack )
 
-      console.log('auth_ack',  auth_ack )
+      // console.log('auth_ack',  auth_ack )
       if( !auth_ack ){
         this.send_auth_fail( peer, 'hmac dismatched' );
         return

@@ -12,8 +12,9 @@ export class BohoAuth_File extends BohoAuthCore{
     this.AUTH = new Map();
     let pathObj = path.parse(_path)
     this.path = path.resolve(_path)
+    console.log('auth from file path:', this.path )
     let ext = pathObj.ext;
-    if( ext.toLowerCase() == '.js'){
+    if( ext.toLowerCase() == '.js' || ext.toLowerCase() == '.mjs'){
       // Read auth data from file
       console.log( "#JS path:", this.path ); 
       this.loadAuthInfoFile_JS( this.path)
@@ -23,7 +24,6 @@ export class BohoAuth_File extends BohoAuthCore{
     }else{
       console.log('no authinfofile path.')
     }
-    console.log('authfromfile path:', this.path )
   }
 
 

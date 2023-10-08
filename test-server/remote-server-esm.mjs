@@ -1,4 +1,4 @@
-import { RemoteServer, serverOption } from 'remote-signal'
+import { RemoteServer, serverOption } from '../index.js'
 
 // serverOption.showMetric = 2;
 // serverOption.showMessage = 'message';

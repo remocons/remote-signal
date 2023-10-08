@@ -48,12 +48,12 @@ export default [
     ]
   }
   ,{
-    input: './src/index.js',
+    input: './index.js',
     output: [
       { file: pkg.main,
         format: 'cjs'
-      },
-      { file: pkg.esm, format: 'es' }
+      }
+      , { file: pkg.esm, format: 'es' }
     ],
     plugins: [
       resolve({

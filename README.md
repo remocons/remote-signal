@@ -22,7 +22,7 @@ This library provides a server and client for doing signaling(messaging) with pe
  - Support Remote Signal Protocol.
  - Web browser use WebSocket.
  - Node.js use WebSocket or CongSocket.
- - Arduino use congSocket.
+ - Arduino use CongSocket.
  - No MQTT protocol support.
 
 ## Remote Signal repositories.
