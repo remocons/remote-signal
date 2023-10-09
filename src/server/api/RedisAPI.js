@@ -1,6 +1,6 @@
 import { STATUS } from './api_constant.js'
 
-const MIN_LEVEL = 200;
+const MIN_LEVEL = 255;
 
 export class RedisAPI{
   constructor( redisClient, _minLevel ){
