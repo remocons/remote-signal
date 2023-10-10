@@ -1,4 +1,4 @@
-import { Remote } from './client/RemoteWebSocket.js'
+import { Remote } from './src/client/RemoteWebSocket.js'
 import { Boho, RAND, MBP, BohoMsg, Meta, MetaSize , sha256, Buffer } from 'boho'
 
 Boho.RAND = RAND;

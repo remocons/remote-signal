@@ -6,7 +6,7 @@ import pkg from './package.json'
 
 export default [
   {
-    input: './src/browserDefault.js',
+    input: './indexWebBrowser.js',
     output: [
       {
         file: pkg.browser,

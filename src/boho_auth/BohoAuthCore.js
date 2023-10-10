@@ -4,9 +4,9 @@
 
 import { MBP } from 'meta-buffer-pack'
 import { BohoMsg , Meta } from 'boho'
-import { quotaTable } from '../quotaTable.js'
+import { quotaTable } from '../common/quotaTable.js'
 import { serverOption } from '../server/serverOption.js'
-import { RemoteMsg ,CLIENT_STATE } from '../constants.js'
+import { RemoteMsg ,CLIENT_STATE } from '../common/constants.js'
 import { FileLogger } from '../server/FileLogger.js'
 
 const decoder = new TextDecoder()
@@ -52,8 +52,8 @@ export class BohoAuthCore{
       //2. get key of id from DB
       let authInfo = await this.getAuth( id )
 
+      // console.log('##### authInfo',authInfo )
       if(serverOption.debug.showAuthInfo ){
-        console.log('##### authInfo',authInfo )
       }
       
       if( !authInfo ){
@@ -135,7 +135,7 @@ export class BohoAuthCore{
       }
 
       if( peer.level === serverOption.adminLevel){
-        console.log('## ADMIN LOGIN')
+        console.log('## LOGIN ADMIN CID:',  peer.cid )
         peer.isAdmin = true;
       }
       // console.log('auth: peer.quota', peer.quota )

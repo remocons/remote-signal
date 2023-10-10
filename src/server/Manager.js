@@ -1,7 +1,7 @@
 import { MBP } from 'meta-buffer-pack'
 import { ServerRemote } from './ServerRemote.js'
 import { serverOption } from './serverOption.js'
-import { RemoteMsg, PAYLOAD_TYPE, CLIENT_STATE } from '../constants.js'
+import { RemoteMsg, PAYLOAD_TYPE, CLIENT_STATE } from '../common/constants.js'
 import { FileLogger } from './FileLogger.js'
 import { Metric } from './Metric.js'
 

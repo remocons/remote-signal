@@ -2,8 +2,8 @@ import { webcrypto } from 'crypto';
 import { MBP } from 'meta-buffer-pack'
 import { Boho, BohoMsg, MetaSize } from 'boho'
 import { serverOption } from './serverOption.js';
-import { RemoteMsg, ENC_MODE, CLIENT_STATE } from '../constants.js'
-import { quotaTable } from '../quotaTable.js'
+import { RemoteMsg, ENC_MODE, CLIENT_STATE } from '../common/constants.js'
+import { quotaTable } from '../common/quotaTable.js'
 
 const decoder = new TextDecoder()
 

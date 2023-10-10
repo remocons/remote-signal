@@ -19,6 +19,7 @@ export class BohoAuth_Redis extends BohoAuthCore{
   // get device key from DB. (for Boho auth.)
   async getAuth( id ){
     let result = await this.redis.hGetAll(DEVICE_PREFIX + id)
+    console.log('BohoAuth_Redis: getAuth req id result',id, result)
     if(result.key) return result
   }
 

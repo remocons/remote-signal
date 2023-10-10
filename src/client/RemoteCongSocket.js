@@ -32,7 +32,7 @@ export class RemoteCongSocket extends RemoteCore{
     // TCP Socket
     let urlObj = new URL( url )
     // console.log(urlObj)
-    if( !urlObj.protocol != "cong://"){ 
+    if( urlObj.protocol != "cong:"){ 
       urlObj = new URL( 'cong://'+ url )
     }
     // console.log('congSocket url:', urlObj )

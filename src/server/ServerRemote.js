@@ -1,8 +1,8 @@
 import { pack, CongRx } from '../client/CongPacket.js'
 import { ServerRemoteCore } from './ServerRemoteCore.js';
 import { serverOption } from './serverOption.js';
-import { RemoteMsg } from '../constants.js';
-import * as util from '../util.js'
+import { RemoteMsg } from '../common/constants.js';
+import * as util from '../common/util.js'
 
 const decoder = new TextDecoder()
 

@@ -1,8 +1,8 @@
 import { MBP ,Buffer} from 'meta-buffer-pack'
 import EventEmitter from "eventemitter3";
 import { Boho, BohoMsg, MetaSize } from "boho";
-import { RemoteMsg , PAYLOAD_TYPE , SIZE_LIMIT , ENC_MODE ,STATES} from '../constants.js'
-import { quotaTable } from '../quotaTable.js'
+import { quotaTable } from '../common/quotaTable.js'
+import { RemoteMsg , PAYLOAD_TYPE , SIZE_LIMIT , ENC_MODE ,STATES} from '../common/constants.js'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
