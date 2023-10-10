@@ -19,13 +19,13 @@ export class BohoAuth_Redis extends BohoAuthCore{
   // get device key from DB. (for Boho auth.)
   async getAuth( id ){
     let result = await this.redis.hGetAll(DEVICE_PREFIX + id)
-    console.log('BohoAuth_Redis: getAuth req id result',id, result)
+    // console.log('BohoAuth_Redis: getAuth req id result',id, result)
     if(result.key) return result
   }
 
 // add device auth info
   async addAuth( id, keyStr , cid = '', level = 0){
-    console.log('addAuth', id, keyStr, cid, level)
+    // console.log('addAuth', id, keyStr, cid, level)
     let Base64hashKey = Buffer.from( sha256.hash( keyStr)).toString('base64')
     return this.redis.hSet( DEVICE_PREFIX + id, {'key': Base64hashKey, 'cid': cid ,'level': level} )
   }
