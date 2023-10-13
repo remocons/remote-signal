@@ -269,15 +269,19 @@ export class RemoteCore extends EventEmitter{
       console.log("SERVER_REDIRECT")
       console.log( buffer.toString('hex'))
       let host_port;
+      let url;
+      let protocol;
       if( buffer.byteLength == 7){ // ipv4 ,port
         console.log('ipv4,port')
         host_port = byteToUrl( buffer.subarray(1)) 
+        protocol = 'cong://'
       }else{ // domain url
         console.log('domainURL')
         host_port = decoder.decode( buffer.subarray(1)) 
+        protocol = ''
       }
-      const protocol = 'ws://'
-      let url = protocol + host_port
+
+      url = protocol + host_port
       console.log('url: ', url )
       this.redirect(url)
       break;
