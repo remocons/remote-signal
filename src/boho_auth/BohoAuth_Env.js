@@ -1,7 +1,16 @@
 /**
- * BohoAuth_Env
- * use env BOHO_AUTH=id1.key1.level:id2:key2.level
+ * BohoAuth_Env.js
+ * 
+ * use env BOHO_AUTH=id1.key1.level,id2:key2.level
+ * 
+ * id: <String> max 8chars
+ * key: <String>
+ * level: <Numbrer> range: 0~255
+ * separator: ','
+ * 
+ * example => process.env.BOHO_AUTH=id1.key1.255,id2.key2.200
  */
+
 import { BohoAuthCore } from './BohoAuthCore.js';
 import { sha256 } from 'boho'
 
@@ -15,7 +24,7 @@ export class BohoAuth_Env extends BohoAuthCore {
       process.exit()
     }
 
-    let id_keys = process.env.BOHO_AUTH.split(':')
+    let id_keys = process.env.BOHO_AUTH.split(',')
 
     if (id_keys.length >= 1) {
       id_keys.forEach(v => {
