@@ -1,5 +1,5 @@
 /**
- * BohoAuth_Env.js
+ * Auth_Env.js
  * 
  * use env BOHO_AUTH=id1.key1.level,id2:key2.level
  * 
@@ -11,16 +11,16 @@
  * example => process.env.BOHO_AUTH=id1.key1.255,id2.key2.200
  */
 
-import { BohoAuthCore } from './BohoAuthCore.js';
+import { AuthCore } from './AuthCore.js';
 import { sha256 } from 'boho'
 
-export class BohoAuth_Env extends BohoAuthCore {
+export class Auth_Env extends AuthCore {
   constructor() {
     super()
     this.AUTH = new Map();
     if (!process.env.BOHO_AUTH) {
       // console.log('env',process.env)
-      console.log("BohoAuth_Env: NO env.BOHO_AUTH authentication value.")
+      console.log("Auth_Env: NO env.BOHO_AUTH authentication value.")
       process.exit()
     }
 

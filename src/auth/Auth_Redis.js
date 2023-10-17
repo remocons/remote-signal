@@ -1,17 +1,17 @@
 
 /**
- * BohoAuth_Redis
+ * Auth_Redis
  */
-import { BohoAuthCore } from '../boho_auth/BohoAuthCore.js';
+import { AuthCore } from './AuthCore.js';
 import { sha256 } from 'boho'
 const DEVICE_PREFIX = "device:"
 
-export class BohoAuth_Redis extends BohoAuthCore{
+export class Auth_Redis extends AuthCore{
   constructor( redisClient ){
     super()
     // default redis url and port
     if( !redisClient ){
-      throw new Error("BohoAuthRedis constructor: no redisClient")
+      throw new Error("AuthRedis constructor: no redisClient")
     }
     this.redis = redisClient
   }
@@ -19,7 +19,7 @@ export class BohoAuth_Redis extends BohoAuthCore{
   // get device key from DB. (for Boho auth.)
   async getAuth( id ){
     let result = await this.redis.hGetAll(DEVICE_PREFIX + id)
-    // console.log('BohoAuth_Redis: getAuth req id result',id, result)
+    // console.log('Auth_Redis: getAuth req id result',id, result)
     if(result.key) return result
   }
 

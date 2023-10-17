@@ -19,11 +19,13 @@ export async function echo( remote , req)
   else
     remote.response( req.mid, STATUS.OK , req.args )
 }
+
 export async function date( remote , req)
 {
   let r = new Date().toUTCString()
   remote.response( req.mid, STATUS.OK , r)
 }
+
 export async function unixtime( remote , req)
 {
   let r = Math.floor( Date.now() /1000)

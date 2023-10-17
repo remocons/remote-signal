@@ -6,7 +6,7 @@ export function checkPermission(remote){
   if( remote.level >= MIN_LEVEL ){
     return true
   }else{
-    return false
+    return false 
   }
 }
 

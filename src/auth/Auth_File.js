@@ -1,12 +1,12 @@
 /**
- * BohoAuth_File
+ * Auth_File
  */
-import { BohoAuthCore } from './BohoAuthCore.js';
+import { AuthCore } from './AuthCore.js';
 import { readFileSync } from 'fs'
 import { sha256 } from 'boho'
 import path from 'path'
 
-export class BohoAuth_File extends BohoAuthCore{
+export class Auth_File extends AuthCore{
   constructor( _path ){
     super()
     this.AUTH = new Map();

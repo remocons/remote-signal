@@ -1,5 +1,5 @@
 /**
- * BohoAuthCore
+ * AuthCore
  */
 
 import { MBP } from 'meta-buffer-pack'
@@ -10,12 +10,12 @@ import { RemoteMsg ,CLIENT_STATE } from '../common/constants.js'
 import { FileLogger } from '../server/FileLogger.js'
 
 const decoder = new TextDecoder()
-export class BohoAuthCore{
+export class AuthCore{
   constructor(){ 
     this.authLogger;
     if( serverOption.fileLogger.auth.use ){
       this.authLogger = new FileLogger( serverOption.fileLogger.auth.path)
-      console.log('BohoAuth: begin file logger.[auth]')
+      console.log('Auth: begin file logger.[auth]')
     }
   }
 

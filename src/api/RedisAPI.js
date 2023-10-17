@@ -16,8 +16,9 @@ export class RedisAPI{
     if( !redisClient ){
       throw new Error("RedisAPI constructor: no redisClient")
     }
-    this.redis = redisClient
+    this.redisClient = redisClient
     this.minLevel = _minLevel ? _minLevel : MIN_LEVEL
+    this.commands = COMMANDS
   }
 
 
@@ -39,36 +40,18 @@ export class RedisAPI{
       let cmd = req.topic
       cmd = cmd.toUpperCase()
       if( COMMANDS.includes(cmd)){
-        // console.log('RedisAPI call:', cmd, req.$)
+        // console.log('RedisAPI call:', cmd, req.args)
 
-        //common client menthod:  redisClient and remoteRedisAPI_Client
-        result = await this.redis.sendCommand( [ cmd, ...req.$ ] )
-        // result : []
-        // result  [key,v1, key2, v2 ...]
-        if( typeof result =='object'){
-          if( Array.isArray(result)){
-            // array. convert to object
-            let resultObj = {}
-            let k = result.length
-            for(let i = 0 ; i < k ; i += 2 ){
-              resultObj[ result[i]] = result[i+1]
-            }
-            // console.log('RedisAPI resultObj:', resultObj)
-            result = resultObj
-          }else{
-            // remote response object.  use result.body
-            if( result.ok ){
-              result = result.body
-            }
-          }
+        if( req.args.length > 0 ){
+          result = await this.redisClient[cmd]( ...req.args )
         }else{
-          // string. no convert
+          result = await this.redisClient[cmd]()
         }
 
         // console.log('RedisAPI: result:', result)
 
       }else{
-        result = 'redis api: no such a cmd '+ cmd;
+        // result = 'RedisAPI: no such a cmd '+ cmd;
         status = STATUS.ERROR;
       }
       remote.response( req.mid, status , result)

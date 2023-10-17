@@ -82,6 +82,7 @@ export class RemoteServer extends EventEmitter {
 
 
   api(target, api) {
+   
     this.apiNames.add(target)
 
     // common checkPermission
@@ -90,8 +91,9 @@ export class RemoteServer extends EventEmitter {
     }
 
 
-    // type1,. single request function
-    if (typeof api.request == 'function') {
+    if(typeof api.request == 'function' && Array.isArray( api.commands )){
+      // console.log('type1 class one request', target )
+
       this.on(target, (remote, req) => {
         if (api.checkPermission(remote, req)) {
           api.request(remote, req)
@@ -100,19 +102,23 @@ export class RemoteServer extends EventEmitter {
         }
       })
 
-      // type2. multiple functions
-    } else {
+    }else{
+      // console.log('type3: function list', target )
       let apiList = []
       Object.keys(api).forEach(v => {
+        console.log('keys', v )
         if (typeof api[v] === 'function') apiList.push(v)
       })
+
+      console.log('list',apiList)
 
       this.on(target, (remote, req) => {
         let r;
         if (!api.checkPermission(remote, req)) {
           r = "NO_PERMISSION."
         } else {
-          if (apiList.includes(req.topic)) {
+          // if (apiList.includes(req.topic)) {
+          if ( api[req.topic] ) {
             api[req.topic](remote, req)
             return
           } else {
@@ -122,8 +128,6 @@ export class RemoteServer extends EventEmitter {
 
         remote.response(req.mid, STATUS.ERROR, r)
       })
-
-
     }
 
     return this
