@@ -1,12 +1,18 @@
 /**
  * Auth_Env.js
  * 
- * use env BOHO_AUTH=id1.key1.level,id2:key2.level
+ * You can use environment variable BOHO_AUTH.
  * 
- * id: <String> max 8chars
- * key: <String>
- * level: <Numbrer> range: 0~255
- * separator: ','
+ *  BOHO_AUTH=id1.key1.level,id2:key2.level 
+ * 
+ *  or constructor parameter.
+ * 
+ * 
+ * [ authInfo ]
+ *  id: <String> max 8chars
+ *  key: <String>
+ *  level: <Numbrer> range: 0~255
+ *  separator: ','
  * 
  * example => process.env.BOHO_AUTH=id1.key1.255,id2.key2.200
  */
@@ -15,16 +21,20 @@ import { AuthCore } from './AuthCore.js';
 import { sha256 } from 'boho'
 
 export class Auth_Env extends AuthCore {
-  constructor() {
+  constructor( authInfo) {
     super()
-    this.AUTH = new Map();
-    if (!process.env.BOHO_AUTH) {
-      // console.log('env',process.env)
-      console.log("Auth_Env: NO env.BOHO_AUTH authentication value.")
+    let id_keys;
+    if( authInfo ){
+      id_keys = authInfo.split(',')
+    }else if ( process.env.BOHO_AUTH) {
+      authInfo = process.env.BOHO_AUTH
+      id_keys = process.env.BOHO_AUTH.split(',')
+    }else{
+      console.log("Auth_Env: None of process.env.BOHO_AUTH or authInfo")
       process.exit()
     }
-
-    let id_keys = process.env.BOHO_AUTH.split(',')
+    
+    this.AUTH = new Map();
 
     if (id_keys.length >= 1) {
       id_keys.forEach(v => {
