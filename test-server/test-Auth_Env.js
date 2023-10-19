@@ -13,5 +13,5 @@ let authInfo = 'id1.key1.255,id2.key2.200'
 
 let authManager = new Auth_Env( authInfo ) 
 const remoteServer = new RemoteServer( serverOption, authManager )   
-console.log( 'serverOption:', serverOption )
+// console.log( 'serverOption:', serverOption )
 
