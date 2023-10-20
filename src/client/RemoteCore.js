@@ -74,6 +74,7 @@ export class RemoteCore extends EventEmitter{
     this.url2 = url;
     this.url2closeCounter = SIZE_LIMIT.REDIRECTION_CLOSE;
     this.close()
+    this.open()
   }
 
   open(url ) {
@@ -266,23 +267,24 @@ export class RemoteCore extends EventEmitter{
       break;
 
     case RemoteMsg.SERVER_REDIRECT :
-      console.log("SERVER_REDIRECT")
-      console.log( buffer.toString('hex'))
+      // console.log( buffer.toString('hex'))
       let host_port;
       let url;
       let protocol;
+      let addressType;
       if( buffer.byteLength == 7){ // ipv4 ,port
-        console.log('ipv4,port')
+        addressType = 'IPV4:PORT'
         host_port = byteToUrl( buffer.subarray(1)) 
         protocol = 'cong://'
       }else{ // domain url
-        console.log('domainURL')
+        addressType= 'URL'
         host_port = decoder.decode( buffer.subarray(1)) 
-        protocol = ''
+        protocol = ''  // must included in url
       }
 
       url = protocol + host_port
-      console.log('url: ', url )
+
+      console.log(`REDIRECT TO <${addressType}> : ${url}` )
       this.redirect(url)
       break;
 
