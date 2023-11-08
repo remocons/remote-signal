@@ -9,7 +9,7 @@ export default [
     input: './indexWebBrowser.js',
     output: [
       {
-        file: pkg.browser,
+        file: pkg.browserIIFE,
         format: 'iife', 
         name: 'Remote',
         sourcemap: true,
@@ -31,7 +31,7 @@ export default [
     input: './src/client/RemoteWebSocket.js',
     output: [
       {
-        file: pkg.module,
+        file: pkg.browserESM,
         format: 'es', // 
         sourcemap: true,
       }
