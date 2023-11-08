@@ -3,6 +3,7 @@ export { RemoteCongSocket } from './src/client/RemoteCongSocket.js'
 export { pack, CongRx } from './src/client/CongPacket.js'
 export { RemoteServer } from './src/server/RemoteServer.js'
 export { serverOption } from './src/server/serverOption.js'
+export { FileLogger } from './src/server/FileLogger.js'
 export * from './src/common/constants.js'
 
 export * from 'boho'

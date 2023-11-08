@@ -23,6 +23,15 @@ export class Auth_Redis extends AuthCore{
     if(result.key) return result
   }
 
+
+  async getAuthIdList() {
+    let result = await this.redis.keys( DEVICE_PREFIX + '*')
+    result = result.map( v=> {
+      return v.split(':')[1]
+    })
+    if(result) return result
+  }
+
 // add device auth info
   async addAuth( id, keyStr , cid = '', level = 0){
     // console.log('addAuth', id, keyStr, cid, level)

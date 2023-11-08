@@ -39,14 +39,18 @@ export class Auth_Env extends AuthCore {
     if (id_keys.length >= 1) {
       id_keys.forEach(v => {
 
-        let id = v.split('.')[0]
+        let did = v.split('.')[0]
         let key = v.split('.')[1]
         let level = v.split('.')[2]
+        level = parseInt(level)
 
-        if (id && key && level) {
-          this.addAuth(id, key, id, level)
+        // console.log('typeof level', level, typeof level)
+
+        if (did && key && typeof level =='number') {
+          let cid = did;
+          this.addAuth(did, key, cid, level)
         } else {
-          console.log("Wrong process.env.BOHO_AUTH authentication value.")
+          console.log("Wrong process.env.BOHO_AUTH authentication value.", id, key, level)
           process.exit();
         }
       })
@@ -60,6 +64,9 @@ export class Auth_Env extends AuthCore {
 
   async getAuth(id) {
     return this.AUTH.get(id)
+  }
+  async getAuthIdList() {
+    return Array.from( this.AUTH.keys() )
   }
 
   addAuth(id, keyStr, cid, level = 0) {

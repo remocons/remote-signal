@@ -1,15 +1,15 @@
 {
   "name": "remote-signal",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "remote signal",
   "type": "module",
+  "browser": "./dist/remote-signal.min.js",
+  "module": "./dist/remote-signal.esm.js",
   "main": "./dist/remote-signal.cjs",
   "exports": {
     "import": "./index.js",
     "require": "./dist/remote-signal.cjs"
   },
-  "browser": "./dist/remote-signal.min.js",
-  "browser_esm": "./dist/remote-signal.esm.js",
   "esm": "./dist/remote-signal.mjs",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.1.0",

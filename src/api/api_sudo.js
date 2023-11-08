@@ -7,6 +7,7 @@ export const commands = [
   'channels','subscribers',
   'remote', 'client', 'close',
   'addauth' , 'getauth' ,'delauth',
+  'getauthidlist', 'getdevicelist',
   'adddevice' ,'getdevice','deldevice' 
 ]
 
@@ -44,31 +45,36 @@ export async function request( remote, req) {
         if (req.$[0]) result = remote.manager.closeRemoteByCId(req.$[0])
   
       } else if (cmd == 'addauth' || cmd == 'adddevice') {
-        console.log('## inside addauth: ', remote.manager.bohoAuth , req.$.length)
+        // console.log('## api_sudo: addauth ', remote.manager.bohoAuth , req.$.length)
         if (remote.manager.bohoAuth && req.$.length == 4) {
-          if (remote.manager.bohoAuth.db.addAuth) {
+          if (remote.manager.bohoAuth.addAuth) {
             let did = req.$[0]
             let dkey = req.$[1]
             let cid = req.$[2]
             let level = req.$[3]
-            console.log('###### did,dkey,cid,level: ', did,dkey,cid,level)
-            result = await remote.manager.bohoAuth.db.addAuth(did, dkey, cid, level)
-            console.log('###### result: ', result)
+            // console.log('###### did,dkey,cid,level: ', did,dkey,cid,level)
+            result = await remote.manager.bohoAuth.addAuth(did, dkey, cid, level)
           }
   
         }
       } else if (cmd == 'delauth' || cmd == 'deldevice') {
         if (remote.manager.bohoAuth && req.$.length == 1) {
-          if (remote.manager.bohoAuth.db.delAuth) {
+          if (remote.manager.bohoAuth.delAuth) {
             let did = req.$[0]
-            result = await remote.manager.bohoAuth.db.delAuth(did)
+            result = await remote.manager.bohoAuth.delAuth(did)
           }
         }
       } else if (cmd == 'getauth' || cmd == 'getdevice') {
         if (remote.manager.bohoAuth && req.$.length == 1) {
-          if (remote.manager.bohoAuth.db.getAuth) {
+          if (remote.manager.bohoAuth.getAuth) {
             let did = req.$[0]
-            result = await remote.manager.bohoAuth.db.getAuth(did)
+            result = await remote.manager.bohoAuth.getAuth(did)
+          }
+        }
+      } else if (cmd == 'getauthidlist' || cmd == 'getdevicelist') {
+        if (remote.manager.bohoAuth ) {
+          if (remote.manager.bohoAuth.getAuthIdList ) {
+            result = await remote.manager.bohoAuth.getAuthIdList()
           }
         }
       } else{

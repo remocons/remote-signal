@@ -30,7 +30,10 @@ export class Auth_File extends AuthCore{
   async getAuth( id ){
     return this.AUTH.get( id )
   }
-
+ 
+  async getAuthIdList() {
+    return Array.from( this.AUTH.keys() )
+  }
 
   //loaded when server start.
    loadAuthInfoFile_JS(path){ 

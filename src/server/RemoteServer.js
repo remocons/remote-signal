@@ -7,10 +7,10 @@ import { STATUS } from '../api/api_constant.js'
 
 export class RemoteServer extends EventEmitter {
 
-  constructor(options, authManager, requestHandler) {
+  constructor(options, authManager , remoteManager) {
     super();
     // console.log('RemoteServer input options', options )
-    this.manager = new Manager(this, authManager, requestHandler)
+    this.manager = new Manager(this, authManager, remoteManager)
     this.apiNames = new Set()
 
     if(options.port != 0){
@@ -42,7 +42,7 @@ export class RemoteServer extends EventEmitter {
 
     console.log('WebSocketServer listen:', options.port)
     this.wss = new WebSocketServer(options)
-    this.wss.setMaxListeners(0)
+    // this.wss.setMaxListeners(0)
 
     this.wss.on('error', (err) => {
       console.error('### ws server error:', err.message)

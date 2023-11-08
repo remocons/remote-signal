@@ -10,7 +10,7 @@ const decoder = new TextDecoder()
 
 export class Manager{
 
-  constructor( server, bohoAuth  ) {
+  constructor( server, bohoAuth , remoteManager ) {
     this.server = server;
     this.txBytes = 0;
     this.rxBytes = 0;
@@ -18,6 +18,13 @@ export class Manager{
     this.bohoAuth = bohoAuth;
     // TIP. bohoAuth module is option.
     // if exist: used by ServerRemoteCore for the auth. process.
+
+    if(remoteManager ){
+      this.remoteManager = remoteManager
+      remoteManager.manager = this
+    }else{
+      this.remoteManager = null
+    }
 
     this.connectionLogger;
     if (serverOption.fileLogger.connection.use) {

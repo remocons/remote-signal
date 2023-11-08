@@ -31,7 +31,7 @@ export default [
     input: './src/client/RemoteWebSocket.js',
     output: [
       {
-        file: pkg.browser_esm,
+        file: pkg.module,
         format: 'es', // 
         sourcemap: true,
       }

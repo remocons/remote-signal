@@ -1,11 +1,47 @@
 import { memoryUsage } from 'process';
 import { ENC_MODE } from '../common/constants.js'
 
+const MAX = 10
+let period = 10000
 
 export class Metric{
   constructor(manager){
     this.manager = manager;
+
+    this.metricsPack= {
+      remotes:[],
+      channels:[],
+      txBytes:[],
+      rxBytes:[],
+      unixTime: 0,
+      period: 0
+    }
+
+    this.tickId = setInterval( e=>{
+
+      this.metricsPack.remotes.push( this.manager.remotes.size )
+      if(this.metricsPack.remotes.length > MAX ) this.metricsPack.remotes.shift()
+
+      this.metricsPack.channels.push( this.manager.channel_map.size )
+      if(this.metricsPack.channels.length > MAX ) this.metricsPack.channels.shift()
+
+      
+      this.metricsPack.txBytes.push( this.manager.txBytes )
+      if(this.metricsPack.txBytes.length > MAX ) this.metricsPack.txBytes.shift()
+
+      this.metricsPack.rxBytes.push( this.manager.rxBytes )
+      if(this.metricsPack.rxBytes.length > MAX ) this.metricsPack.rxBytes.shift()
+
+      this.metricsPack.unixTime = Math.floor( Date.now() /1000)
+      this.metricsPack.period = period;
+      this.manager.txBytes = 0
+      this.manager.rxBytes = 0
+    
+
+    },10000)
   }
+
+
 
   oneline(prn){
     let memoryUse = memoryUsage();
@@ -13,9 +49,7 @@ export class Metric{
       ...memoryUse
     }]
 
-    if ( prn ) console.table(memoryInfo, [ 
-    'rss','heapTotal','heapUsed',
-    'external','arrayBuffers' ]);
+    if ( prn ) console.table(memoryInfo, [ 'rss','heapTotal','heapUsed', 'external','arrayBuffers' ]);
 
     let metric = [{
       lastSSID: this.manager.lastSSID,
@@ -25,9 +59,9 @@ export class Metric{
       rxBytes: this.manager.rxBytes,
     }]
 
-    console.table(metric, [ 
-    'lastSSID', 'remotes', 'channels','txBytes','rxBytes' ]);
-    return metric
+    if ( prn ) cconsole.table(metric, [ 'lastSSID', 'remotes', 'channels','txBytes','rxBytes' ]);
+
+    return metric[0]
   }
 
   getRemotes( prn ){
