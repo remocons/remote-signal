@@ -4,7 +4,8 @@
   "description": "remote signal",
   "type": "module",
 
-  "browser":"./indexWebBrowser.js",
+  "browser":"./dist/remote-signal.esm.js",
+  "module":"./dist/remote-signal.esm.js",
 
   "browserIIFE": "./dist/remote-signal.min.js",
   "browserESM": "./dist/remote-signal.esm.js",
