@@ -3,14 +3,21 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import terser from '@rollup/plugin-terser'
 import pkg from './package.json'
+const year = new Date().getFullYear();
+const bannerShort = `/*!
+ ${year} ${pkg.author}
+ @version ${pkg.version}
+*/`;
+
 
 export default [
   {
     input: './indexWebBrowser.js',
     output: [
       {
+        banner: bannerShort,
         file: pkg.browser,
-        format: 'umd', 
+        format: 'iife', 
         name: 'Remote',
         sourcemap: true,
       }
@@ -24,13 +31,14 @@ export default [
       }),
       resolve(), 
       commonjs() 
-      // ,terser() 
+      ,terser() 
     ]
   }
   ,{
     input: './src/client/RemoteWebSocket.js',
     output: [
       {
+        banner: bannerShort,
         file: pkg.browserESM,
         format: 'es', // 
         sourcemap: true,
