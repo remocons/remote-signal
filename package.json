@@ -1,13 +1,10 @@
 {
   "name": "remote-signal",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "remote signal",
   "type": "module",
 
-  "browser":"./dist/remote-signal.esm.js",
-  "module":"./dist/remote-signal.esm.js",
-
-  "browserIIFE": "./dist/remote-signal.min.js",
+  "browser":"./dist/remote-signal.js",
   "browserESM": "./dist/remote-signal.esm.js",
   "main": "./dist/remote-signal.cjs",
   "exports": {

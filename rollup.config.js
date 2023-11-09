@@ -9,8 +9,8 @@ export default [
     input: './indexWebBrowser.js',
     output: [
       {
-        file: pkg.browserIIFE,
-        format: 'iife', 
+        file: pkg.browser,
+        format: 'umd', 
         name: 'Remote',
         sourcemap: true,
       }
@@ -24,7 +24,7 @@ export default [
       }),
       resolve(), 
       commonjs() 
-      ,terser() 
+      // ,terser() 
     ]
   }
   ,{
