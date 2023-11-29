@@ -211,8 +211,8 @@ export class ServerRemote extends ServerRemoteCore {
         }
       }else{
         // not open 
-        console.log('ServerRemote::send(), WS not open. #'+this.ssid + ' cid:', this.cid +":"+ this.getStateName() )
-        console.log('message not sent:', message )
+        // console.log('ServerRemote::send(), WS not open. #'+this.ssid + ' cid:', this.cid +":"+ this.getStateName() )
+        // console.log('message not sent:', message )
         this.close( true )
       }
 
@@ -220,7 +220,7 @@ export class ServerRemote extends ServerRemoteCore {
       if( this.socket.readyState == 'open'){
         this.socket.write( pack(message) )
       }else{
-        console.log('ServerRemote::send(), CongSocket not open #'+this.ssid + ' cid:' , this.cid + ':' + this.getStateName() )
+        // console.log('ServerRemote::send(), CongSocket not open #'+this.ssid + ' cid:' , this.cid + ':' + this.getStateName() )
         this.close( true )
       }
     }

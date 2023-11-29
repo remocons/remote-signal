@@ -127,7 +127,7 @@ export class ServerRemoteCore {
       msgType = message[0]
 
       if (msgType === BohoMsg.ENC_488) {
-        let from = this.boho.isAuthorized ? this.cid : "anonymous"
+        // let from = this.boho.isAuthorized ? this.cid : "anonymous"
         // console.log(`>> [E488] from: ${from} LEN ${message.byteLength}`)
         // console.log( "ENC buffer", message)
         try {

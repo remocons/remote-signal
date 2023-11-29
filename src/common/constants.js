@@ -8,7 +8,8 @@ export const STATES = {
   SERVER_READY: 4,
   AUTH_FAIL: 5,
   AUTH_READY: 6,
-  READY: 7
+  READY: 7,
+  REDIRECTING: 8
 }
 for (let c in STATES) { STATES[STATES[c]] = c }
 
@@ -37,7 +38,6 @@ for (let c in ENC_MODE) { ENC_MODE[ENC_MODE[c]] = c }
 export const SIZE_LIMIT = {
   TAG_LEN1: 255,
   TAG_LEN2: 65535,
-  REDIRECTION_CLOSE: 2,
   CONNECTION_CHECKER_PERIOD: 3000,
   PROMISE_TIMEOUT: 5000,
   DID: 8,

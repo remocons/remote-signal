@@ -23,9 +23,8 @@ export class RemoteCore extends EventEmitter{
     this.cid = ""   // get from the server  CID_RES
     this.ip = ""    // get from the server  IAM_RES message.
     this.socket = null;
-    this.url = url; // main server url
+    this.url = url; // init default server url
     this.url2 = ""  // redirection url
-    this.url2closeCounter = 0
     this.state = STATES.CLOSED;  // Number type
     this.stateName = this.getStateName() // String type
 
@@ -72,42 +71,44 @@ export class RemoteCore extends EventEmitter{
   
   redirect(url){
     this.url2 = url;
-    this.url2closeCounter = SIZE_LIMIT.REDIRECTION_CLOSE;
     this.close()
-    this.open()
+    // this.open()
   }
 
   open(url ) {
     if( !url && !this.url && !this.url2 ) return;
+
     if( url ){
-        if( !this.url ){ // first connection
+        if( !this.url ){ // default host url
           this.url = url
-        }else if( url !== this.url ){ // main server change
+        }else if( url !== this.url ){ // default host url change
           this.url = url;
           if( this.socket ){
             this.close()
             return
           }
         }
-    } 
+    }
 
-    let _url
+
+    // url connection prioty:  1st. url2(secondary redirection host) 2nd: url(default host)
+
     if( this.url2 ){
-      _url = this.url2
-    }else if( this.url ){
-      _url = this.url
+      this.createConnection( this.url2)
+    }else{
+      this.createConnection( this.url )
     }
     
-    this.createConnection( _url)
-    if(!this.connectionCheckerIntervalID) this.connectionCheckerIntervalID = setInterval(this.keepAlive.bind(this), this.connectionCheckerPeriod);
+    if(!this.connectionCheckerIntervalID){
+      this.connectionCheckerIntervalID = setInterval(this.keepAlive.bind(this), this.connectionCheckerPeriod);
+    } 
   }
 
   onOpen( ){
     if( this.url.includes("wss://" )){
       this.TLS = true;
-    }
-    if(this.url2 ){
-      this.url2closeCounter = SIZE_LIMIT.REDIRECTION_CLOSE;
+    }else{
+      this.TLS = false;
     }
     this.stateChange('open' )
   }
@@ -115,17 +116,7 @@ export class RemoteCore extends EventEmitter{
   onClose(){
     this.boho.isAuthorized = false;
     this.cid = ""
-    if(this.url2 ){
-      if(this.url2closeCounter < 0  ){
-        this.url2 = ""
-      }else{
-        this.url2closeCounter--;
-      }
-      // console.log('redirection close counter:', this.url2closeCounter)
-    }
     this.stateChange('closed' )
-
-    // console.log('-- remote is closed:')
   }
 
   // manual login
@@ -254,10 +245,9 @@ export class RemoteCore extends EventEmitter{
 
     case RemoteMsg.QUOTA_LEVEL :
       let quotaLevel = buffer[1]
-      console.log( '>> QUOTA_LEVEL : ' ,quotaLevel )
       this.level = quotaLevel;
       this.quota = quotaTable[ quotaLevel ];
-      console.log('## current quota:', JSON.stringify(this.quota) )
+      console.log('## QUOTA:', quotaLevel, JSON.stringify(this.quota) )
       break;
 
     case RemoteMsg.SERVER_CLEAR_AUTH :

@@ -270,6 +270,12 @@ export class Manager{
   }
 
   sender(tag, remote, message) {
+    if(serverOption.memberOnly && !remote.boho.isAuthorized){
+      // console.log("## MemberOnly, reject unAuthorized remote." )
+      remote.send(Buffer.from([RemoteMsg.SERVER_CLEAR_AUTH]))
+      remote.close()
+      return ['err', 'not autrized']
+    }
 
     if( tag.indexOf('$') == 0 ) return ['err', 'prefix $ is reserved for userSet tag.']
 

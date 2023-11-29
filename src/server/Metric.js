@@ -9,11 +9,11 @@ export class Metric{
     this.manager = manager;
 
     this.metricsPack= {
-      remotes:[],
-      channels:[],
-      txBytes:[],
-      rxBytes:[],
-      unixTime: 0,
+      remotes:[0],
+      channels:[0],
+      txBytes:[0],
+      rxBytes:[0],
+      unixTime: [Math.floor( Date.now() /1000)],
       period: 0
     }
 
