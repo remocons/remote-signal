@@ -24,7 +24,6 @@ export class RemoteCore extends EventEmitter{
     this.ip = ""    // get from the server  IAM_RES message.
     this.socket = null;
     this.url = url; // init default server url
-    this.url2 = ""  // redirection url
     this.state = STATES.CLOSED;  // Number type
     this.stateName = this.getStateName() // String type
 
@@ -69,14 +68,14 @@ export class RemoteCore extends EventEmitter{
   //   console.log('onServerSignal', event, data )
   // }
   
-  redirect(url){
-    this.url2 = url;
+  redirect(url2){
     this.close()
-    // this.open()
+    this.stateChange('redirecting')
+    this.createConnection( url2)
   }
 
   open(url ) {
-    if( !url && !this.url && !this.url2 ) return;
+    if( !url && !this.url ) return;
 
     if( url ){
         if( !this.url ){ // default host url
@@ -90,14 +89,7 @@ export class RemoteCore extends EventEmitter{
         }
     }
 
-
-    // url connection prioty:  1st. url2(secondary redirection host) 2nd: url(default host)
-
-    if( this.url2 ){
-      this.createConnection( this.url2)
-    }else{
-      this.createConnection( this.url )
-    }
+    this.createConnection( this.url )
     
     if(!this.connectionCheckerIntervalID){
       this.connectionCheckerIntervalID = setInterval(this.keepAlive.bind(this), this.connectionCheckerPeriod);
@@ -954,7 +946,7 @@ export class RemoteCore extends EventEmitter{
     if(emitEventAndMessage) this.emit(eventName, emitEventAndMessage)
     
     if( this.stateName !== eventName ){
-      // console.log(`change: ${this.stateName} => ${eventName}` )
+      console.log(`state: ${this.stateName} => ${eventName}` )
       this.emit('change', eventName)
       this.stateName = eventName
     } 

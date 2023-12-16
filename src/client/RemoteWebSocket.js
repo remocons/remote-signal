@@ -20,9 +20,16 @@ export class Remote extends RemoteCore{
 
   
   close() {
-    this.socket?.close();
-    this.socket = null;
+    if(this.socket ){
+      this.socket.onclose = null
+      this.socket.onmessage = null
+      this.socket.onerror = null
+      this.socket.close();
+      this.socket = null;
+    }
+    this.emit('close')
   }
+
 
   stop(){
     this.close()
