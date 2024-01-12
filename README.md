@@ -1,43 +1,27 @@
-# Remote Signal
+# NOTICE.
 
-This library provides a server and client for doing signaling(messaging) with peers that supports [`RemoteSignal`](https://github.com/remocons/remote-signal).
-
-## Features
-
-### Signaling
-- pub/sub style multicast: by channel name.
-- uni-cast: one to one messaging by CID.
-- CID subscribing: subscribe one peer using CID.
-- CID: Communication Id.
-- HomeChannel: group by IP address.
-
-### Built-in Security
-- Authentication
-- Encryption
-- E2EE
-- thanks to the `Boho` [ [github](https://github.com/remocons/boho) ]
+The library name has been changed to `IOSignal`.
+Please use the new library name.  [`IOSignal`](https://github.com/remocons/iosignal).
 
 
-## Compatibility
- - Support Remote Signal Protocol.
- - Web browser use WebSocket.
- - Node.js use WebSocket or CongSocket.
- - Arduino use CongSocket.
- - No MQTT protocol support.
+## iosignal(new name) repositories.
 
-## Remote Signal repositories.
-- Javascript: `remote-signal` [ [github](https://github.com/remocons/remote-signal) | [npm](https://www.npmjs.com/package/remote-signal) ]
-  - Node.js server
+- Javascript: `iosignal` [ [github](https://github.com/remocons/iosignal) | [npm](https://www.npmjs.com/package/iosignal) ]
+  - Node.js server ( WebSocket, CongSocket)
   - Node.js client ( WebSocket, CongSocket)
   - Web Browser client( WebSocket)
 - Arduino client: 
-  - `remote-signal-arduino` [ [github](https://github.com/remocons/remote-signal-arduino) ]
-  - or use Arduino Library Manager: `RemoteSignal`
-- CLI program 
-  - `remocon` [ [github](https://github.com/remocons/remocon) | [npm](https://www.npmjs.com/package/remocon) ]
-  - install: `sudo npm i -g remocon` or  `npm i -g remocon`  
-  - support mac, linux and windows.
+  - Arduino Library Manager: `IOSignal`
+  - or `iosignal-arduino` [ [github](https://github.com/remocons/iosignal-arduino) ]
+
+- IOSignal CLI program 
   - server and client
+  - support mac, linux and windows.
+  - `iosignal-cli` [ [github](https://github.com/remocons/iosignal-cli) | [npm](https://www.npmjs.com/package/iosignal-cli) ]
+  - install: `sudo npm i -g iosignal-cli` or  `npm i -g iosignal-cli`  
+
+
+
 
 ## License
 
