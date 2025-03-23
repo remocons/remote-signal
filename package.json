@@ -1,0 +1,12 @@
+{
+  "name": "remote-signal",
+  "version": "0.40.0",
+  "description": "remote signal",
+  "author":"Taeo Lee <sixgen@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remocons/remote-signal.git"
+  }
+}
